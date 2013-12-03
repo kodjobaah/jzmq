@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">WhatAmIDoing</string>
+    <string name="session_name_in_cookie">PLAY_SESSION</string>
+    <string name="auth_success_message">ADDED AUTHENTICATION TOKEN TO SESSISON</string>
+    <string name="app_url">http://www.whatamidoing.info:9000</string>
+    <string name="login_url">http://www.whatamidoing.info:9000/registerLogin</string>
+    <string name="findallinvites_url">http://www.whatamidoing.info:9000/findAllInvites</string>
+    <string name="send_invite_url">http://www.whatamidoing.info:9000/invite</string>
+    <string name="publish_url">ws://www.whatamidoing.info:9000/publishVideo</string>
+    <string name="select_camera">Select Camera</string>
+    <string name="start_video">Start Camera</string>
+    <string name="stop_video">Stop Camera</string>
+    <string name="start_transmission">Start Sharing</string>
+    <string name="end_transmission">Stop Sharing</string>
+    <string name="welcome_message">Share what you are doing with friends and foe...</string>
+    <string name="invite_progress_fetch_invites">Fetching Previous Invites&#8230;</string>
+    <string name="invite_dialog_message">Enter an email below or Select from previous</string>
+    <string name="invite_button">Click To Invite</string>
+    <string name="cancel">Cancel</string>
+    <string name="invite_previous_message">Select All Previous</string>
+    <string name="find_invite">Share Moment</string>
+    <string name="server_connection_problems">Problems connecting to server. Try again later</string>
+    <string name="unable_to_share">Unable To Share</string>
+    <string name="damn">damn!!!</string>
+    <string name="number_of_times_to_check_websocket_status">5</string>
+    <string name="unable_to_connect">Server Problems</string>
+    <string name="unable_to_send_invites">Unable to Send Invites</string>
+    <string name="success_sent_invites">Invites has been successfully sent</string>
+    <string name="nice">Nice</string>
+    <string name="able_to_send_invites">Invites Sent</string>
+    <string name="sharing_ticker">Sharing Stream</string>
+    <string name="what_am_i_doing_sharing_notification">What am I Doing - Sharing</string>
+    <string name="app_title">What Am I Doing</string>
+    <string name="share_video">Sharing..</string>
+    <string name="sharing_stopped">No Longer Sharing</string>
+    <string name="sharing_service_stopped">Sharing Service Stopped</string>
+   <string name="sharing_connection_closed">Sharing connection Problems</string>
+    <string name="sharing_service_connection_closed">Sharing Connection Closed Try Again!!</string>
+    <string name="view_sharers">Whoes Watching!</string>
+</resources>

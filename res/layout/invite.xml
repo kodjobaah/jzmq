@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+     android:id="@+id/inviteList_layout"
+    android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+    <LinearLayout android:id="@+id/invite_status"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_gravity="center" android:gravity="center_horizontal"
+		android:orientation="vertical" android:visibility="gone">
+
+		<ProgressBar style="?android:attr/progressBarStyleLarge"
+			android:layout_width="wrap_content" android:layout_height="wrap_content"
+			android:layout_marginBottom="8dp" />
+
+		<TextView android:id="@+id/invite_status_message"
+			android:layout_width="wrap_content" android:layout_height="wrap_content"
+			android:layout_marginBottom="16dp" android:fontFamily="sans-serif-light"
+			android:text="@string/invite_progress_fetch_invites"
+			android:textAppearance="?android:attr/textAppearanceMedium" />
+	
+	</LinearLayout>
+	
+<GridLayout      
+       	android:id="@+id/invite_form"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:columnCount="2"
+        android:orientation="vertical"
+        android:rowCount="5"
+        android:stretchMode="columnWidth" 
+       >
+
+    
+    <!-- Invite progress -->
+
+	
+
+	 	<TextView
+    	       	android:id="@+id/invite_dialog_message"
+    	       	android:ems="10"
+    	       	android:layout_row="0"
+    	       	android:layout_column="0"
+    	       	android:layout_columnSpan="2"
+    	       	android:layout_gravity="fill"
+    	       	android:layout_width="match_parent"
+        		android:layout_height="wrap_content"
+    	       	android:text="@string/invite_dialog_message"
+				android:textAppearance="?android:attr/textAppearanceMedium" >
+
+    	    </TextView>
+   
+  			<EditText
+    	       	android:id="@+id/invite_email"
+    	       	android:layout_columnSpan="2"
+    	       	android:layout_column="0"
+    	       	android:layout_row="1"
+    	       	android:layout_gravity="fill"
+    	       	android:maxLines="1"
+    	       	android:ems="10"
+    	       	android:hint="@string/prompt_email"
+    	       	android:layout_width="wrap_content"
+        		android:layout_height="wrap_content"
+    	       	android:inputType="textEmailAddress" >
+    	    </EditText>
+    	    
+			<TextView
+			   
+    			android:id="@+id/invite_previous_message"
+    			style="?android:attr/textAppearanceLarge"
+    		   	android:layout_gravity="fill_horizontal"
+    		   	android:layout_row="2"
+    		   	android:layout_column="0"
+    			android:layout_width="wrap_content"
+    			android:layout_height="wrap_content"
+    			android:text="@string/invite_previous_message" />
+
+			<CheckBox
+    			android:id="@+id/select_all_previous_invites"
+    			android:layout_gravity="center_horizontal"
+    			android:layout_row="2"
+    			android:layout_column="1"
+    			
+    			android:layout_width="wrap_content"
+    			android:layout_height="wrap_content" />
+			
+			<ExpandableListView
+			        android:layout_row="3"
+       				android:layout_gravity="fill_horizontal"
+					android:layout_columnSpan="2"
+					android:layout_column="0"
+        			android:id="@+id/invite_list"
+        			android:layout_width="match_parent"
+       				android:layout_height="100dip"
+       				android:background="@android:color/transparent"
+        			android:layout_marginBottom="20dip"
+        			android:cacheColorHint="#00000000"
+        			android:clickable="true"
+        			android:divider="@android:color/transparent"
+        			android:dividerHeight="0dip"
+        			android:fadingEdge="none"
+        			android:paddingLeft="10dip"
+        			android:paddingRight="10dip"
+        			android:scrollbars="none" 
+        			>
+      		</ExpandableListView>
+				<Button
+      	   		    style="@style/BtnStyleBlack"
+        	      	android:id="@+id/invite_to_view"
+        	      	android:layout_row="4"
+        	      	android:layout_column="0"
+        	      	android:layout_width="wrap_content"
+       				android:layout_height="wrap_content"
+       				android:layout_gravity="center_horizontal"
+       				android:text="@string/invite_button" />
+   		 
+        	   <Button
+        	    style="@style/BtnStyleBlack"
+    		    android:id="@+id/cancel_invite"
+    		    android:layout_row="4"
+    		    android:layout_column="1"
+    		   android:layout_width="wrap_content"
+       			android:layout_height="wrap_content"
+       			android:layout_gravity="center_horizontal"
+       			android:text="@string/cancel" />
+	
+</GridLayout>
+
+</RelativeLayout>
+
