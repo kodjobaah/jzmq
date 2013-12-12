@@ -27,7 +27,7 @@ import java.nio.ShortBuffer;
 
 import com.googlecode.javacv.FFmpegFrameRecorder;
 import com.googlecode.javacv.cpp.opencv_core.IplImage;
-import com.whatamidoing.R;
+import com.watamidoing.R;
 
 import static com.googlecode.javacv.cpp.opencv_core.*;
 

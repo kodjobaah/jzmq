@@ -13,7 +13,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 
 import com.google.android.gcm.GCMRegistrar;
-import com.whatamidoing.R;
+import com.watamidoing.R;
 
 import android.location.Location;
 import android.location.LocationListener;

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.whatamidoing"
+    package="com.watamidoing"
     android:versionCode="1"
     android:versionName="1.0" >
 
@@ -50,18 +50,6 @@
 	<uses-permission android:name="com.example.locationbasedstreaming.permission.C2D_MESSAGE" />
 	 
 	
-	     <uses-feature android:name="android.hardware.camera" />
-     <uses-feature
-        android:name="android.hardware.camera.autofocus"
-        android:required="true" />
-    <uses-feature
-        android:name="android.hardware.camera.front"
-        android:required="true" />
-    <uses-feature
-        android:name="android.hardware.camera.front.autofocus"
-        android:required="true" />
-    
-
     <application
         android:allowBackup="true"
         android:icon="@drawable/icon"
@@ -69,7 +57,7 @@
         android:theme="@android:style/Theme.Holo" android:debuggable="false">
         
          <activity
-             android:name="com.whatamidoing.RecordActivity"
+             android:name="com.watamidoing.RecordActivity"
               android:label="@string/app_name"
              android:screenOrientation="landscape">
 
@@ -78,7 +66,7 @@
 
         
         <activity
-            android:name="com.whatamidoing.FdActivity"
+            android:name="com.watamidoing.FdActivity"
             android:configChanges="keyboardHidden|orientation"
             android:label="@string/app_name"
             android:screenOrientation="landscape" >
@@ -86,7 +74,7 @@
 
         </activity>
         <activity
-            android:name="com.whatamidoing.Login"
+            android:name="com.watamidoing.Login"
             android:label="@string/title_activity_login"
             android:windowSoftInputMode="adjustResize|stateVisible" >
             <intent-filter>
@@ -99,7 +87,7 @@
         
          <activity
             android:launchMode="singleTask"
-            android:name="com.whatamidoing.view.WhatAmIdoing"
+            android:name="com.watamidoing.view.WhatAmIdoing"
             android:label="@string/welcome_message"
             android:screenOrientation="landscape"
             android:windowSoftInputMode="adjustResize" >
@@ -109,7 +97,7 @@
         
         <activity
             android:launchMode="singleTask"
-            android:name="com.whatamidoing.view.WebSocketActivity"
+            android:name="com.watamidoing.view.WebSocketActivity"
             android:label="@string/app_name"
             android:theme="@android:style/Theme.NoDisplay" >
 
@@ -136,10 +124,10 @@
 			  </intent-filter>
 			</receiver>		
 			
-			<service android:name=".GCMIntentService" />
+			<service android:name="com.watamidoing.GCMIntentService" />
 			
                                
-         <service android:name="com.whatamidoing.transport.service.WebsocketService"
+         <service android:name="com.watamidoing.transport.service.WebsocketService"
         android:process=":websocketservice" />
     </application>
 

@@ -7,6 +7,7 @@
     <string name="app_url">http://www.whatamidoing.info:9000</string>
     <string name="login_url">http://www.whatamidoing.info:9000/registerLogin</string>
     <string name="findallinvites_url">http://www.whatamidoing.info:9000/findAllInvites</string>
+    <string name="getInviteList_url">http://www.whatamidoing.info:9000/getInviteList</string>
     <string name="send_invite_url">http://www.whatamidoing.info:9000/invite</string>
     <string name="publish_url">ws://www.whatamidoing.info:9000/publishVideo</string>
     <string name="select_camera">Select Camera</string>
@@ -15,6 +16,7 @@
     <string name="start_transmission">Start Sharing</string>
     <string name="end_transmission">Stop Sharing</string>
     <string name="welcome_message">Share what you are doing with friends and foe...</string>
+    <string name="invited_dialog_message">Below is who is watching</string>
     <string name="invite_progress_fetch_invites">Fetching Previous Invites&#8230;</string>
     <string name="invite_dialog_message">Enter an email below or Select from previous</string>
     <string name="invite_button">Click To Invite</string>
@@ -36,7 +38,13 @@
     <string name="share_video">Sharing..</string>
     <string name="sharing_stopped">No Longer Sharing</string>
     <string name="sharing_service_stopped">Sharing Service Stopped</string>
-   <string name="sharing_connection_closed">Sharing connection Problems</string>
+    <string name="sharing_connection_closed">Sharing connection Problems</string>
     <string name="sharing_service_connection_closed">Sharing Connection Closed Try Again!!</string>
     <string name="view_sharers">Whoes Watching!</string>
+    <string name="info">Info</string>
+    <string name="video_not_started">You need to Start Recording Before You can Share</string>
+    <string name="video_not_started_view_sharers">You need to start recording and share the moment</string>
+    <string name="invited_progress_fetch_invites">Getting whoes Watching!</string>
+    
+    
 </resources>
