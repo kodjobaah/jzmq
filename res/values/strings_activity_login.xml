@@ -18,5 +18,6 @@
     <string name="welcome">Welcome to WhatAmIdoing..Login or Register and start sharing momements</string>
     <string name="register_message">Or Register</string>
     <string name="enter_email">Enter an Email</string>
+    <string name="action_ok">Ok</string>
 
 </resources>
