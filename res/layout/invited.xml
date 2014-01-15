@@ -4,7 +4,7 @@
      android:id="@+id/inviteList_layout"
     android:layout_width="match_parent"
         android:layout_height="wrap_content">
-    <LinearLayout android:id="@+id/invite_status"
+    <LinearLayout android:id="@+id/invited_status"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:layout_gravity="center" android:gravity="center_horizontal"
@@ -14,16 +14,15 @@
 			android:layout_width="wrap_content" android:layout_height="wrap_content"
 			android:layout_marginBottom="8dp" />
 
-		<TextView android:id="@+id/invite_status_message"
+		<TextView android:id="@+id/invited_status_message"
 			android:layout_width="wrap_content" android:layout_height="wrap_content"
-			android:layout_marginBottom="16dp" 
-			android:text="@string/invite_progress_fetch_invites"
+			android:text="@string/invited_progress_fetch_invites"
 			android:textAppearance="?android:attr/textAppearanceMedium" />
 	
 	</LinearLayout>
 	
 <GridLayout      
-       	android:id="@+id/invite_form"
+       	android:id="@+id/invited_form"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:columnCount="2"
@@ -35,10 +34,8 @@
     
     <!-- Invite progress -->
 
-	
-
 	 	<TextView
-    	       	android:id="@+id/invite_dialog_message"
+    	       	android:id="@+id/invited_dialog_message"
     	       	android:ems="10"
     	       	android:layout_row="0"
     	       	android:layout_column="0"
@@ -46,51 +43,17 @@
     	       	android:layout_gravity="fill"
     	       	android:layout_width="match_parent"
         		android:layout_height="wrap_content"
-    	       	android:text="@string/invite_dialog_message"
+    	       	android:text="@string/invited_dialog_message"
 				android:textAppearance="?android:attr/textAppearanceMedium" >
 
     	    </TextView>
-   
-  			<EditText
-    	       	android:id="@+id/invite_email"
-    	       	android:layout_columnSpan="2"
-    	       	android:layout_column="0"
-    	       	android:layout_row="1"
-    	       	android:layout_gravity="fill"
-    	       	android:maxLines="1"
-    	       	android:ems="10"
-    	       	android:hint="@string/prompt_email"
-    	       	android:layout_width="wrap_content"
-        		android:layout_height="wrap_content"
-    	       	android:inputType="textEmailAddress" >
-    	    </EditText>
-    	    
-			<TextView
-			   
-    			android:id="@+id/invite_previous_message"
-    			style="?android:attr/textAppearanceLarge"
-    		   	android:layout_gravity="fill_horizontal"
-    		   	android:layout_row="2"
-    		   	android:layout_column="0"
-    			android:layout_width="wrap_content"
-    			android:layout_height="wrap_content"
-    			android:text="@string/invite_previous_message" />
-
-			<CheckBox
-    			android:id="@+id/select_all_previous_invites"
-    			android:layout_gravity="center_horizontal"
-    			android:layout_row="2"
-    			android:layout_column="1"
-    			
-    			android:layout_width="wrap_content"
-    			android:layout_height="wrap_content" />
 			
-			<ExpandableListView
-			        android:layout_row="3"
+			<ListView
+			        android:layout_row="1"
        				android:layout_gravity="fill_horizontal"
 					android:layout_columnSpan="2"
 					android:layout_column="0"
-        			android:id="@+id/invite_list"
+        			android:id="@+id/invited_list"
         			android:layout_width="match_parent"
        				android:layout_height="100dip"
        				android:background="@android:color/transparent"
@@ -104,20 +67,10 @@
         			android:paddingRight="10dip"
         			android:scrollbars="none" 
         			>
-      		</ExpandableListView>
-				<Button
-      	   		    style="@style/BtnStyleBlack"
-        	      	android:id="@+id/invite_to_view"
-        	      	android:layout_row="4"
-        	      	android:layout_column="0"
-        	      	android:layout_width="wrap_content"
-       				android:layout_height="wrap_content"
-       				android:layout_gravity="center_horizontal"
-       				android:text="@string/invite_button" />
-   		 
+      		</ListView>
         	   <Button
         	    style="@style/BtnStyleBlack"
-    		    android:id="@+id/cancel_invite"
+    		    android:id="@+id/cancel_invited"
     		    android:layout_row="4"
     		    android:layout_column="1"
     		   android:layout_width="wrap_content"

@@ -20,7 +20,7 @@
 
 		<TextView android:id="@+id/invite_status_message"
 			android:layout_width="wrap_content" android:layout_height="wrap_content"
-			android:layout_marginBottom="16dp" android:fontFamily="sans-serif-light"
+			android:layout_marginBottom="16dp" 
 			android:text="@string/share_video"
 			android:textAppearance="?android:attr/textAppearanceMedium" />
 	
