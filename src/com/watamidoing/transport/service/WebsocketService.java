@@ -1,11 +1,9 @@
 package com.watamidoing.transport.service;
 
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 
 import android.app.Notification;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -18,7 +16,7 @@ import android.support.v4.app.NotificationCompat;
 import android.util.Base64;
 import android.util.Log;
 
-import com.watamidoing.R;
+import com.waid.R;
 import com.watamidoing.contentproviders.Authentication;
 import com.watamidoing.contentproviders.DatabaseHandler;
 import com.watamidoing.transport.receivers.NotAbleToConnectReceiver;

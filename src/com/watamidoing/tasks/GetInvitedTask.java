@@ -1,13 +1,6 @@
 package com.watamidoing.tasks;
 
 import java.net.HttpURLConnection;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.regex.Pattern;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -16,17 +9,11 @@ import android.app.Dialog;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.util.Log;
-import android.util.Patterns;
 import android.view.View;
 import android.view.WindowManager.LayoutParams;
 import android.widget.Button;
-import android.widget.CheckBox;
-import android.widget.CompoundButton;
-import android.widget.EditText;
-import android.widget.ExpandableListView;
-import android.widget.TextView;
 
-import com.watamidoing.R;
+import com.waid.R;
 import com.watamidoing.contentproviders.Authentication;
 import com.watamidoing.contentproviders.DatabaseHandler;
 import com.watamidoing.utils.ConnectionResult;

@@ -1,20 +1,18 @@
 package com.watamidoing.utils;
 
 
-import com.watamidoing.Login;
-import com.watamidoing.R;
-import com.watamidoing.view.WhatAmIdoing;
-
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Point;
 import android.os.Build;
 import android.util.DisplayMetrics;
 import android.view.Display;
 import android.view.WindowManager;
-import android.view.inputmethod.InputMethodManager;
+
+import com.waid.R;
+import com.watamidoing.Login;
+import com.watamidoing.view.WhatAmIdoing;
 
 
 public class UtilsWhatAmIdoing {

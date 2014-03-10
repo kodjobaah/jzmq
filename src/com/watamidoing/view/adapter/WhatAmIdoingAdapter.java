@@ -1,13 +1,10 @@
 package com.watamidoing.view.adapter;
 
-import com.watamidoing.R;
-import com.watamidoing.view.WhatAmIdoing;
-
-import android.content.Context;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
-import android.widget.GridView;
+
+import com.watamidoing.view.WhatAmIdoing;
 
 public class WhatAmIdoingAdapter extends BaseAdapter{
 

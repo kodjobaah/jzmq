@@ -1,6 +1,5 @@
 package com.watamidoing.view;
 
-import static com.googlecode.javacv.cpp.opencv_core.IPL_DEPTH_8U;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -14,11 +13,9 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.PorterDuff.Mode;
 import android.graphics.YuvImage;
-import android.graphics.PorterDuff;
 import android.hardware.Camera;
 import android.hardware.Camera.PreviewCallback;
 import android.hardware.Camera.Size;
@@ -39,13 +36,10 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.GridLayout;
 import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.Toast;
 
-import com.googlecode.javacv.FFmpegFrameRecorder;
-import com.googlecode.javacv.cpp.opencv_core.IplImage;
-import com.watamidoing.R;
+import com.waid.R;
 import com.watamidoing.contentproviders.Authentication;
 import com.watamidoing.contentproviders.DatabaseHandler;
 import com.watamidoing.tasks.GetInvitedTask;
@@ -76,7 +70,6 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 	private static final String LOG_TAG = "whatamidoing.oncreate";
 	private InviteListTask mInviteListTask;
 	private PowerManager.WakeLock mWakeLock;	
-	private volatile FFmpegFrameRecorder recorder;
 	private boolean recording = false;
 	private long startTime = 0;
 
@@ -87,7 +80,6 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 	private int imageHeight = 240;
 	private int frameRate = 30;
 	private CameraView cameraView;
-	private IplImage yuvIplimage = null;
 	/**
 	 * Class for interacting with the main interface of the service.
 	 */
@@ -262,12 +254,11 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 	@Override
 	public void onSaveInstanceState(Bundle savedInstanceState) {
 	 
-		if (videoSharing) {
-			doUnbindService();
-		}
-		
 		if (videoStart) {
-			camera.stopPreview();
+			
+			Button startVideo = (Button) activity
+					.findViewById(R.id.start_video);
+			startVideo.setText(START_CAMERA);
 			previewRunning = false;
 			mainLayout.removeAllViews();
 			cameraView = null;
@@ -275,20 +266,7 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 			camera = null;
 		}
 		
-		 Authentication auth =  DatabaseHandler.getInstance(this).getDefaultAuthentication();
-		 String invalidateTokenUrl = activity.getString(R.string.invalidate_token_url);
-		 HttpConnectionHelper connectionHelper = new HttpConnectionHelper();
-			try {
-				String urlVal = invalidateTokenUrl+"?token="+auth.getToken();
-				ConnectionResult connectionResult = connectionHelper.connect(urlVal);
-			
-				if ((connectionResult != null) && (connectionResult.getStatusCode() ==  HttpURLConnection.HTTP_OK)) {
-					 Log.d("WhatAmIDoing.onSaveInstanceState","results from invalidate_token["+connectionResult.getResult()+"]");
-				}
-			
-			} finally {
-				connectionHelper.closeConnection();
-			}
+		
 	    // Always call the superclass so it can save the view hierarchy state
 	    super.onSaveInstanceState(savedInstanceState);
 	}
@@ -521,24 +499,8 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 				final Button transmissionButton = (Button) activity
 						.findViewById(R.id.start_transmission);
 				if (result) {
-					videoSharing = false;
-					Button shareMomement = (Button) activity.findViewById(R.id.inviteButton);
-					shareMomement.setEnabled(false);
-					Button viewSharers = (Button) activity.findViewById(R.id.viewSharers);
-					viewSharers.setEnabled(false);
-
-					doUnbindService();
-					startVideo.setText(START_CAMERA);
-					startVideo.setEnabled(false);
-					transmissionButton.setText(START_SHARING);				
-					final Button startTransmissionButton = (Button) activity
-							.findViewById(R.id.start_transmission);
-					startTransmissionButton.setEnabled(true);
+					stopSharingAndNotifyCamera();
 					UtilsWhatAmIdoing.displayWebsocketProblemsDialog(activity);
-					if (cameraView != null ) {
-						cameraView.sharingHasStopepd();
-					}
-
 				}
 
 			}
@@ -550,22 +512,8 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 	public void websocketServiceStop(final boolean serviceStopped) {
 		runOnUiThread(new Thread(new Runnable() {
 			public void run() {
-				Button startVideo = (Button) activity
-						.findViewById(R.id.start_video);
-
-				final Button transmissionButton = (Button) activity
-						.findViewById(R.id.start_transmission);
 				if (serviceStopped) {
-					videoSharing = false;
-					Button shareMomement = (Button) activity.findViewById(R.id.inviteButton);
-					shareMomement.setEnabled(false);
-					Button viewSharers = (Button) activity.findViewById(R.id.viewSharers);
-					viewSharers.setEnabled(false);
-					doUnbindService();
-					transmissionButton.setText(START_SHARING);
-					if (cameraView != null ) {
-						cameraView.sharingHasStopepd();
-					}
+					stopSharingAndNotifyCamera();
 					UtilsWhatAmIdoing.displayWebsocketServiceStoppedDialog(activity);
 
 				}
@@ -574,35 +522,34 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 		}));
 
 	}
+	
+	synchronized private void stopSharingAndNotifyCamera() {
+		final Button transmissionButton = (Button) activity
+				.findViewById(R.id.start_transmission);
+		
+		videoSharing = false;
+		Button shareMomement = (Button) activity.findViewById(R.id.inviteButton);
+		shareMomement.setEnabled(false);
+		Button viewSharers = (Button) activity.findViewById(R.id.viewSharers);
+		viewSharers.setEnabled(false);
+		doUnbindService();
+		transmissionButton.setText(START_SHARING);
+		if (cameraView != null ) {
+			cameraView.sharingHasStopepd();
+		}		
+		
+	}
 
 	@Override
 	public void websocketServiceConnectionClose(final boolean connectionClose) {
 		runOnUiThread(new Thread(new Runnable() {
 			public void run() {
-				Button startVideo = (Button) activity
-						.findViewById(R.id.start_video);
-
-				final Button transmissionButton = (Button) activity
-						.findViewById(R.id.start_transmission);
-				if (connectionClose) {
-					videoSharing = false;
-					Button shareMomement = (Button) activity.findViewById(R.id.inviteButton);
-					shareMomement.setEnabled(false);
-					Button viewSharers = (Button) activity.findViewById(R.id.viewSharers);
-					viewSharers.setEnabled(false);
-
-					doUnbindService();
-					transmissionButton.setText(START_SHARING);
-					if (cameraView != null ) {
-						cameraView.sharingHasStopepd();
-					}
+					if (connectionClose) {
+						stopSharingAndNotifyCamera();
 					UtilsWhatAmIdoing.displayWebsocketServiceConnectionClosedDialog(activity);
-
 				}
-
 			}
 		}));
-
 	}
 
 	@Override
@@ -786,8 +733,6 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 			imageHeight = currentParams.getPreviewSize().height;
 			frameRate = currentParams.getPreviewFrameRate();
 
-			// Create the yuvIplimage if needed
-			yuvIplimage = IplImage.create(imageWidth, imageHeight, IPL_DEPTH_8U, 2);
 			//yuvIplimage = IplImage.create(imageWidth, imageHeight, IPL_DEPTH_32S, 2);
 		}
 
@@ -819,14 +764,17 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 						size.width, size.height, null);
 				videoTimestamp = 1000 * (System.currentTimeMillis() - startTime);
 
+				
+				
 				// Put the camera preview frame right into the yuvIplimage object
 				//yuvIplimage.getByteBuffer().put(data);
 				android.graphics.Rect previewRect = new android.graphics.Rect(0, 0, imageWidth, imageHeight);
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				image.compressToJpeg(previewRect, 10, baos);
+				image.compressToJpeg(previewRect, 70, baos);
 
+				//byte[] jdata = resizeImage(baos.toByteArray());
 				byte[] jdata = baos.toByteArray();
-
+				
 				Message msgObj = Message.obtain(null, WebsocketService.PUSH_MESSAGE_TO_QUEUE);
 				Bundle b = new Bundle();
 				b.putByteArray("frame", jdata);
@@ -838,10 +786,23 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-				Log.d("WhatAmiDoing.onCameraFrame"," transmit bytes["+jdata.length+"]");
-				baos = null;
+				Log.d("WhatAmiDoing.CameraView.onPreview"," transmit bytes["+jdata.length+"]");
+				//baos = null;
 				jdata = null;
 			}
+		}
+		
+		byte[] resizeImage(byte[] input) {
+		    Bitmap original = BitmapFactory.decodeByteArray(input , 0, input.length);
+		    Camera.Parameters parameters = camera.getParameters();
+			Size size = parameters.getPreviewSize();
+		    Log.i("WhatAmiDoing.CameraView.resizeImage","original bitmap ["+original+"]");
+		    Bitmap resized = Bitmap.createScaledBitmap(original, size.width/5, size.height/5, true);
+		         
+		    ByteArrayOutputStream blob = new ByteArrayOutputStream();
+		    resized.compress(Bitmap.CompressFormat.JPEG, 100, blob);
+		 
+		    return blob.toByteArray();
 		}
 
 		public void sharingHasStarted() {
