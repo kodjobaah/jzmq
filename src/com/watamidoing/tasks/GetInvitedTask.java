@@ -12,16 +12,21 @@ import android.util.Log;
 import android.view.View;
 import android.view.WindowManager.LayoutParams;
 import android.widget.Button;
+import android.widget.ListView;
+import android.widget.TextView;
 
 import com.waid.R;
 import com.watamidoing.contentproviders.Authentication;
 import com.watamidoing.contentproviders.DatabaseHandler;
+import com.watamidoing.parser.ParseInviteList;
 import com.watamidoing.utils.ConnectionResult;
 import com.watamidoing.utils.HttpConnectionHelper;
 import com.watamidoing.utils.ScreenDimension;
 import com.watamidoing.utils.UtilsWhatAmIdoing;
 import com.watamidoing.view.WhatAmIdoing;
 import com.watamidoing.view.adapter.InviteListExpandableAdapter;
+import com.watamidoing.view.adapter.WhosNotWatchingAdapter;
+import com.watamidoing.view.adapter.WhosWatchingAdapter;
 
 public class GetInvitedTask extends AsyncTask<Void, Void, Boolean> {
 
@@ -87,6 +92,28 @@ public class GetInvitedTask extends AsyncTask<Void, Void, Boolean> {
   
         
 		if (success) {
+			
+			ParseInviteList parseInviteList = new ParseInviteList(inviteList);
+			
+			//Creating a list of those thqt have accepted
+			ListView invitedList = (ListView)dialog.findViewById(R.id.invited_list);
+			TextView tv = new TextView(mContext);
+	        tv.setText(R.string.invited_accepted);
+	        invitedList.addHeaderView(tv);
+			WhosWatchingAdapter whosWatchingAdapter = new WhosWatchingAdapter(mContext,parseInviteList.getAccepted());
+			invitedList.setAdapter(whosWatchingAdapter);
+	
+			//Creating list of those that have not accepted
+			
+			
+			ListView notAcceptedList = (ListView)dialog.findViewById(R.id.invited_list_not_accepted);
+			TextView not = new TextView(mContext);
+			not.setText(R.string.invited_not_accepted);
+			notAcceptedList.addHeaderView(not);
+			WhosNotWatchingAdapter whosWatchingAdapterNotAccepted = new WhosNotWatchingAdapter(mContext,parseInviteList.getNotAccepted());
+			notAcceptedList.setAdapter(whosWatchingAdapterNotAccepted);
+	
+			
 			
 		    Log.d("GetInvitelist.onpostexecute","succes:"+inviteList);
 		    showProgress(false);

@@ -15,9 +15,9 @@
     <string name="error_field_required">This field is required</string>
     <string name="firstName">First Name</string>
     <string name="lastName">Last Name</string>
-    <string name="welcome">Welcome to WhatAmIdoing..Login or Register and start sharing momements</string>
+    <string name="welcome">Welcome to WhatAmIdoing..Login or Register and start sharing moments</string>
     <string name="register_message">Or Register</string>
     <string name="enter_email">Enter an Email</string>
-    <string name="action_ok">Ok</string>
+    <string name="action_ok">OK</string>
 
 </resources>

@@ -35,6 +35,8 @@ import com.watamidoing.utils.ScreenDimension;
 import com.watamidoing.utils.UtilsWhatAmIdoing;
 import com.watamidoing.view.WhatAmIdoing;
 import com.watamidoing.view.adapter.InviteListExpandableAdapter;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class InviteListTask extends AsyncTask<Void, Void, Boolean> {
 

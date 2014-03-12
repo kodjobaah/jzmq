@@ -228,6 +228,41 @@ public class UtilsWhatAmIdoing {
 	}
 	
 	
+	public static void displayGenericMessageForActivity(
+			final Activity activity, String message) {
+		// TODO Auto-generated method stub
+		
+		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(activity);
+		// set title
+		alertDialogBuilder.setTitle("Generic Message");
+ 
+		alertDialogBuilder
+				.setMessage(message)
+				.setCancelable(true)
+				.setPositiveButton(R.string.action_ok, new DialogInterface.OnClickListener(){
+
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						//activity.resetPassword();
+						
+					}
+					
+				})
+				.setNeutralButton("Nice",new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog,int id) {
+						// if this button is clicked, just close
+						// the dialog box and do nothing
+						dialog.cancel();
+					}
+				});
+ 
+		// create alert dialog
+		AlertDialog alertDialog = alertDialogBuilder.create();
+ 
+		// show it
+		alertDialog.show();
+	}
+	
 	public static void displayCancelOkMessageDialog(
 			final Login activity, String message) {
 		// TODO Auto-generated method stub

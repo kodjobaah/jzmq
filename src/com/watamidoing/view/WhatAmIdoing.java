@@ -3,7 +3,6 @@ package com.watamidoing.view;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,8 +39,6 @@ import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.waid.R;
-import com.watamidoing.contentproviders.Authentication;
-import com.watamidoing.contentproviders.DatabaseHandler;
 import com.watamidoing.tasks.GetInvitedTask;
 import com.watamidoing.tasks.InviteListTask;
 import com.watamidoing.tasks.callbacks.WebsocketController;
@@ -52,8 +49,6 @@ import com.watamidoing.transport.receivers.ServiceStartedReceiver;
 import com.watamidoing.transport.receivers.ServiceStoppedReceiver;
 import com.watamidoing.transport.service.WebsocketService;
 import com.watamidoing.transport.service.WebsocketServiceConnection;
-import com.watamidoing.utils.ConnectionResult;
-import com.watamidoing.utils.HttpConnectionHelper;
 import com.watamidoing.utils.ScreenDimension;
 import com.watamidoing.utils.UtilsWhatAmIdoing;
 
@@ -335,21 +330,21 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 					startTransmission.setEnabled(true);
 					startService(msgIntent);
 
-					if (filterNotAbleToConnect != null) {
+					if (notAbleToConnectReceiver == null) {
 						filterNotAbleToConnect = new IntentFilter(NotAbleToConnectReceiver.NOT_ABLE_TO_CONNECT);
 						filterNotAbleToConnect.addCategory(Intent.CATEGORY_DEFAULT);
 						notAbleToConnectReceiver = new NotAbleToConnectReceiver(activity);
 						registerReceiver(notAbleToConnectReceiver, filterNotAbleToConnect);
 					}
 
-					if (filterServiceStartedReciever == null) {
+					if (serviceStartedReceiver == null) {
 						filterServiceStartedReciever = new IntentFilter(ServiceStartedReceiver.SERVICE_STARTED);
 						filterServiceStartedReciever.addCategory(Intent.CATEGORY_DEFAULT);
 						serviceStartedReceiver = new ServiceStartedReceiver(activity);
 						registerReceiver(serviceStartedReceiver, filterServiceStartedReciever);
 					}
 
-					if (filterServiceStoppedReceiver == null) {
+					if (serviceStoppedReceiver == null) {
 						filterServiceStoppedReceiver = new IntentFilter(ServiceStoppedReceiver.SERVICE_STOPED);
 						filterServiceStoppedReceiver.addCategory(Intent.CATEGORY_DEFAULT);
 						serviceStoppedReceiver = new ServiceStoppedReceiver(activity);
@@ -357,7 +352,7 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 					}
 
 
-					if (filterServiceConnectionCloseReceiver == null) {
+					if (serviceConnectionCloseReceiver == null) {
 						filterServiceConnectionCloseReceiver = new IntentFilter(ServiceConnectionCloseReceiver.SERVICE_CONNECTION_CLOSED);
 						filterServiceConnectionCloseReceiver.addCategory(Intent.CATEGORY_DEFAULT);
 						serviceConnectionCloseReceiver = new ServiceConnectionCloseReceiver(activity);
@@ -382,8 +377,11 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 					startTransmission.setText(STOP_SHARING);
 					doBindService();
 				} else {
-					videoSharing = false;
 					stopService(msgIntent);
+					//Unregistering receivers
+					
+					videoSharing = false;
+			
 					doUnbindService();
 					startTransmission.setText(START_SHARING);
 				}
@@ -610,6 +608,73 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 
 	}
 
+	
+	class StopReceivers implements Runnable {
+
+		private WhatAmIdoing activity;
+		public StopReceivers(WhatAmIdoing activity) {
+			this.activity = activity;
+		}
+		@Override
+		public void run() {
+			
+			try {
+				if (notAbleToConnectReceiver != null) {
+					unregisterReceiver(notAbleToConnectReceiver);
+				}
+			} catch (IllegalArgumentException e) {
+				notAbleToConnectReceiver = null;
+			}
+			
+			try {			
+				if (serviceStartedReceiver != null ){
+					unregisterReceiver(serviceStartedReceiver);
+				}
+			} catch (IllegalArgumentException e) {
+				serviceStartedReceiver = null;
+			}
+			
+			try {
+				if (serviceStoppedReceiver != null) {
+					unregisterReceiver(serviceStoppedReceiver);
+				}
+			} catch (IllegalArgumentException e) {
+				serviceStoppedReceiver = null;
+			}
+			
+			try {			
+				if (serviceConnectionCloseReceiver != null) {
+					unregisterReceiver(serviceConnectionCloseReceiver);
+				}
+			} catch (IllegalArgumentException e) {
+				serviceConnectionCloseReceiver = null;
+			}	
+			
+			try {
+				if (networkChangeReceiver != null) {
+					unregisterReceiver(networkChangeReceiver);
+				}
+			} catch (IllegalArgumentException e) {
+				networkChangeReceiver = null;
+			}			
+			doUnbindService();
+			Intent msgIntent = new Intent(activity,com.watamidoing.transport.service.WebsocketService.class);
+			stopService(msgIntent);
+			activity.callOriginalOnBackPressed();			
+		}
+	}
+	
+	
+	public void callOriginalOnBackPressed() {
+		super.onBackPressed();
+	}
+	@Override
+    public void onBackPressed() {
+		
+		StopReceivers stopReceivers = new StopReceivers(this);
+		runOnUiThread(new Thread(stopReceivers));
+		
+	}
 	private void startCamera() {
 
 		if (cameraView == null) {
