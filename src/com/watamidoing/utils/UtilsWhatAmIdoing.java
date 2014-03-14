@@ -3,12 +3,18 @@ package com.watamidoing.utils;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Point;
 import android.os.Build;
+import android.text.Html;
+import android.text.method.LinkMovementMethod;
 import android.util.DisplayMetrics;
 import android.view.Display;
+import android.view.LayoutInflater;
+import android.view.View;
 import android.view.WindowManager;
+import android.widget.TextView;
 
 import com.waid.R;
 import com.watamidoing.Login;
@@ -263,6 +269,30 @@ public class UtilsWhatAmIdoing {
 		alertDialog.show();
 	}
 	
+	public static void displayForgotPasswordLinkDialog(final Login activity){
+		AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+		builder.setTitle(activity.getResources().getString(R.string.reset_password_message));
+
+		LayoutInflater inflater = (LayoutInflater)activity.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+		View layout = inflater.inflate(R.layout.forgotten_password_dialog, null);
+
+		TextView text = (TextView) layout.findViewById(R.id.forgotten_password);
+		text.setMovementMethod(LinkMovementMethod.getInstance());
+		text.setText(Html.fromHtml("click here to request a new password <a href=\"http://www.whatamidoing.info/forgottenPassword\">To Request For New Password </a>"));
+		builder.setView(layout);
+		
+		builder.setNeutralButton(activity.getString(R.string.nice),new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog,int id) {
+				// if this button is clicked, just close
+				// the dialog box and do nothing
+				dialog.cancel();
+			}
+		});
+		AlertDialog alert = builder.create();
+		alert.show();
+		
+		
+	}
 	public static void displayCancelOkMessageDialog(
 			final Login activity, String message) {
 		// TODO Auto-generated method stub

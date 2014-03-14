@@ -1,6 +1,8 @@
 package com.watamidoing;
 
 import java.net.HttpURLConnection;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -10,6 +12,7 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.Html;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -156,7 +159,7 @@ public class Login extends Activity {
 			mEmailView.setError(getString(R.string.error_field_required));
 			focusView = mEmailView;
 			cancel = true;
-		} else if (!mEmail.contains("@")) {
+		} else if (!emailValidator(mEmail)) {
 			mEmailView.setError(getString(R.string.error_invalid_email));
 			focusView = mEmailView;
 			cancel = true;
@@ -174,6 +177,16 @@ public class Login extends Activity {
 			mAuthTask = new UserLoginTask();
 			mAuthTask.execute((Void) null);
 		}
+	}
+	
+	public boolean emailValidator(String email) 
+	{
+	    Pattern pattern;
+	    Matcher matcher;
+	    final String EMAIL_PATTERN = "^[_A-Za-z0-9-]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
+	    pattern = Pattern.compile(EMAIL_PATTERN);
+	    matcher = pattern.matcher(email);
+	    return matcher.matches();
 	}
 
 	/**
@@ -318,14 +331,7 @@ public class Login extends Activity {
 
 
 	public void resetPassword() {
-		
-		
-		UtilsWhatAmIdoing.displayCancelOkMessageDialog(this,"Soon to be implemented");
-		if (TextUtils.isEmpty(mEmail)) {
-			//TODO: Send a generic message
-		} else {
-			
-		}
+		UtilsWhatAmIdoing.displayForgotPasswordLinkDialog(this);
 	}
 
 	

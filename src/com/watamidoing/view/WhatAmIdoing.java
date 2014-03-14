@@ -39,6 +39,8 @@ import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.waid.R;
+import com.watamidoing.contentproviders.Authentication;
+import com.watamidoing.contentproviders.DatabaseHandler;
 import com.watamidoing.tasks.GetInvitedTask;
 import com.watamidoing.tasks.InviteListTask;
 import com.watamidoing.tasks.callbacks.WebsocketController;
@@ -601,6 +603,16 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 		Toast.makeText(getApplicationContext(), "sharing",Toast.LENGTH_LONG ).show();
 
 	}
+	
+	@Override
+	public void onDestroy() {
+		
+		Authentication auth =  DatabaseHandler.getInstance(activity).getDefaultAuthentication();
+		 if (auth != null) {
+			 DatabaseHandler.getInstance(activity).removeAuthentication(auth);
+		 }
+		 super.onDestroy();
+	}
 
 	@Override
 	public void sendFrame(String res) {
@@ -660,6 +672,10 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 			doUnbindService();
 			Intent msgIntent = new Intent(activity,com.watamidoing.transport.service.WebsocketService.class);
 			stopService(msgIntent);
+			Authentication auth =  DatabaseHandler.getInstance(activity).getDefaultAuthentication();
+			 if (auth != null) {
+				 DatabaseHandler.getInstance(activity).removeAuthentication(auth);
+			 }
 			activity.callOriginalOnBackPressed();			
 		}
 	}

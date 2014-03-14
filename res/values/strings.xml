@@ -50,6 +50,7 @@
     <string name="invited_progress_fetch_invites">Getting whoes Watching!</string>
     <string name="invited_accepted">Accepted</string>
     <string name="invited_not_accepted">Not Accepted</string>
-    
+    <string name="forgotten_passowrd_link">click here to request a new password <a href="http://www.whatamidoing.info/forgottenPassword">To Request For New Password </a></string>
+    <string name="reset_password_message">Request For New Password</string>
     
 </resources>
