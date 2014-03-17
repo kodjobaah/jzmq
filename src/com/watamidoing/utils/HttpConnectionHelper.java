@@ -49,6 +49,36 @@ public class HttpConnectionHelper {
 		return connectionResult;
 	}
 	
+	public ConnectionResult connectOther(String urlVal) {
+		
+		
+		disableConnectionReuseIfNecessary();
+		ConnectionResult connectionResult = null;
+		try {
+			URL url = new URL(urlVal);
+			urlConnection = (HttpURLConnection) url.openConnection();
+
+			urlConnection.setRequestProperty("Accept-Encoding", "identity");
+			urlConnection.setDoOutput(false);
+			urlConnection.setConnectTimeout(CONNECTION_TIMEOUT);
+			urlConnection.setReadTimeout(DATARETRIEVAL_TIMEOUT);
+			BufferedReader reader = new BufferedReader(new InputStreamReader(
+					urlConnection.getInputStream()));
+			String line = reader.readLine();
+			String result = line;
+			while ((line = reader.readLine()) != null) {
+				result += line;
+			}
+			int statusCode = urlConnection.getResponseCode();
+			Log.d("HttpConnectionHelper.connect","status code["+statusCode+"]");
+			connectionResult = new ConnectionResult(result, statusCode);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return connectionResult;
+	}
+	
+	
 	public SessionParser getPlaySession() {
 		Map<String, List<String>> headerFields = urlConnection.getHeaderFields();
 		List<String> cookiesHeader = headerFields

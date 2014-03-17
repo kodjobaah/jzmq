@@ -132,6 +132,28 @@ public class UtilsWhatAmIdoing {
 		alertDialog.show();
 	}
 	
+	public static void displayNetworkProblemsForLocationDialog(Activity activity) {
+		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(activity);
+		// set title
+		alertDialogBuilder.setTitle(activity.getString(R.string.unable_to_send_location));
+ 
+		alertDialogBuilder
+				.setMessage(activity.getString(R.string.server_connection_problems))
+				.setCancelable(true)
+				.setNeutralButton(activity.getString(R.string.damn),new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog,int id) {
+						// if this button is clicked, just close
+						// the dialog box and do nothing
+						dialog.cancel();
+					}
+				});
+ 
+		// create alert dialog
+		AlertDialog alertDialog = alertDialogBuilder.create();
+ 
+		// show it
+		alertDialog.show();
+	}
 	
 	public static void displaySuccessInvitesDialog(Activity activity) {
 		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(activity);
@@ -140,6 +162,29 @@ public class UtilsWhatAmIdoing {
  
 		alertDialogBuilder
 				.setMessage(activity.getString(R.string.success_sent_invites))
+				.setCancelable(true)
+				.setNeutralButton(activity.getString(R.string.nice),new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog,int id) {
+						// if this button is clicked, just close
+						// the dialog box and do nothing
+						dialog.cancel();
+					}
+				});
+ 
+		// create alert dialog
+		AlertDialog alertDialog = alertDialogBuilder.create();
+ 
+		// show it
+		alertDialog.show();
+	}
+	
+	public static void displaySuccessLocationInformationSent(Activity activity) {
+		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(activity);
+		// set title
+		alertDialogBuilder.setTitle(activity.getString(R.string.able_to_send_location));
+ 
+		alertDialogBuilder
+				.setMessage(activity.getString(R.string.success_sent_location))
 				.setCancelable(true)
 				.setNeutralButton(activity.getString(R.string.nice),new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog,int id) {

@@ -12,12 +12,16 @@
     <string name="send_invite_url">http://www.whatamidoing.info:9000/invite</string>
     <string name="invalidate_token_url">http://www.whatamidoing.info:9000/invalidateToken</string>
     <string name="publish_url">ws://www.whatamidoing.info:9000/publishVideo</string>
+    <string name="share_location_url">http://www.whatamidoing.info:9000/shareLocation</string>
     <string name="forgotten_password_sign_in_register">Send Me a New Password</string>
     <string name="select_camera">Select Camera</string>
     <string name="start_video">Start Camera</string>
     <string name="stop_video">Stop Camera</string>
+    <string name="find_invite">Share Moment</string>
+    <string name="share_location">Share Location</string>    
     <string name="start_transmission">Start Sharing</string>
     <string name="end_transmission">Stop Sharing</string>
+    <string name="view_sharers">Whoes Watching!</string>
     <string name="welcome_message">Share what you are doing with friends and foe...</string>
     <string name="invited_dialog_message">Below is who is watching</string>
     <string name="invite_progress_fetch_invites">Fetching Previous Invites&#8230;</string>
@@ -25,16 +29,18 @@
     <string name="invite_button">Click To Invite</string>
     <string name="cancel">Cancel</string>
     <string name="invite_previous_message">Select All Previous</string>
-    <string name="find_invite">Share Moment</string>
     <string name="server_connection_problems">Problems connecting to server. Try again later</string>
     <string name="unable_to_share">Unable To Share</string>
     <string name="damn">damn!!!</string>
     <string name="number_of_times_to_check_websocket_status">5</string>
     <string name="unable_to_connect">Server Problems</string>
     <string name="unable_to_send_invites">Unable to Send Invites</string>
+    <string name="unable_to_send_location">Unable to Send Location</string>
     <string name="success_sent_invites">Invites has been successfully sent</string>
+    <string name="success_sent_location">Location has been successfully sent</string>
     <string name="nice">Nice</string>
     <string name="able_to_send_invites">Invites Sent</string>
+    <string name="able_to_send_location">Location Sent</string>
     <string name="sharing_ticker">Sharing Stream</string>
     <string name="what_am_i_doing_sharing_notification">What am I Doing - Sharing</string>
     <string name="app_title">What Am I Doing</string>
@@ -43,8 +49,8 @@
     <string name="sharing_service_stopped">Sharing Service Stopped</string>
     <string name="sharing_connection_closed">Sharing connection Problems</string>
     <string name="sharing_service_connection_closed">Sharing Connection Closed Try Again!!</string>
-    <string name="view_sharers">Whoes Watching!</string>
     <string name="info">Info</string>
+    <string name="camera_not_started">You need to start camera</string>
     <string name="video_not_started">You need to Start Recording Before You can Share</string>
     <string name="video_not_started_view_sharers">You need to start recording and share the moment</string>
     <string name="invited_progress_fetch_invites">Getting whoes Watching!</string>
@@ -52,5 +58,6 @@
     <string name="invited_not_accepted">Not Accepted</string>
     <string name="forgotten_passowrd_link">click here to request a new password <a href="http://www.whatamidoing.info/forgottenPassword">To Request For New Password </a></string>
     <string name="reset_password_message">Request For New Password</string>
+    
     
 </resources>

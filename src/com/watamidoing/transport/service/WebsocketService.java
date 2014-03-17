@@ -88,8 +88,13 @@ public class WebsocketService  extends Service {
                 	
                 	if (mConnection != null) {
                 		byte[] frame = msg.getData().getByteArray("frame");
-                		String res = Base64.encodeToString(frame, Base64.DEFAULT);
-                		mConnection.sendTextMessage(res);
+                		
+                		if  (frame != null) {
+                			String res = Base64.encodeToString(frame, Base64.DEFAULT);
+                			if (res != null) {
+                				mConnection.sendTextMessage(res);
+                			}
+                		}
                 		Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
                 	}
                 	/*

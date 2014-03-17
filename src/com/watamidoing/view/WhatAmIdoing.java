@@ -18,6 +18,9 @@ import android.graphics.YuvImage;
 import android.hardware.Camera;
 import android.hardware.Camera.PreviewCallback;
 import android.hardware.Camera.Size;
+import android.location.Criteria;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -43,6 +46,7 @@ import com.watamidoing.contentproviders.Authentication;
 import com.watamidoing.contentproviders.DatabaseHandler;
 import com.watamidoing.tasks.GetInvitedTask;
 import com.watamidoing.tasks.InviteListTask;
+import com.watamidoing.tasks.WAIDLocationListener;
 import com.watamidoing.tasks.callbacks.WebsocketController;
 import com.watamidoing.transport.receivers.NetworkChangeReceiver;
 import com.watamidoing.transport.receivers.NotAbleToConnectReceiver;
@@ -64,6 +68,8 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 	private static final String STOP_CAMERA = "Stop Camera";
 	private static final String STOP_SHARING = "Stop Sharing";
 	private static final String START_SHARING = "Start Sharing";
+	private static final String SHARE_LOCATION =  "Share Location";
+	private static final String STOP_SHARE_LOCATION ="Stop Share Loc";
 	private static final String LOG_TAG = "whatamidoing.oncreate";
 	private InviteListTask mInviteListTask;
 	private PowerManager.WakeLock mWakeLock;	
@@ -98,26 +104,12 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 	/** Flag indicating whether we have called bind on the service. */
 	boolean mIsBound;
 
-
-	/**
-	 * Handler of incoming messages from service.
-	 */
-	class IncomingHandler extends Handler {
-		@Override
-		public void handleMessage(Message msg) {
-			switch (msg.what) {
-			default:
-				super.handleMessage(msg);
-			}
-		}
-	}
-
-	/**
-	 * Target we publish for clients to send messages to IncomingHandler.
-	 */
-	final Messenger mMessenger = new Messenger(new IncomingHandler());
 	public Camera camera;
 	protected GetInvitedTask mInvitedTaskListView;
+	
+	private LocationManager locationManager;
+	private WAIDLocationListener waidLocationListener;
+
 
 
 
@@ -197,13 +189,11 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 
 			@Override
 			public void onClick(View arg0) {
-				final Button startVideo = (Button) activity
-						.findViewById(R.id.start_video);
 				if (videoStart) {
 					mInviteListTask = new InviteListTask(activity);
 					mInviteListTask.execute((Void) null);
 				} else {
-					String message = activity.getString(R.string.video_not_started);
+					String message = activity.getString(R.string.camera_not_started);
 					UtilsWhatAmIdoing.displayGenericMessageDialog(activity, message);
 				}
 	
@@ -216,13 +206,69 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 			@Override
 			public void onClick(View arg0) {
 				
-				final Button startVideo = (Button) activity
-						.findViewById(R.id.start_video);
 				if (videoStart) {
 					mInvitedTaskListView = new GetInvitedTask(activity);
 					mInvitedTaskListView.execute((Void) null);	
 				} else {
-					String message = activity.getString(R.string.video_not_started_view_sharers);
+					String message = activity.getString(R.string.camera_not_started);
+					UtilsWhatAmIdoing.displayGenericMessageDialog(activity, message);
+				}
+				
+			}
+		});
+		
+		
+		final Button shareLocation = (Button) findViewById(R.id.locationButton);
+		shareLocation.setOnClickListener(new OnClickListener() {
+
+
+
+			@Override
+			public void onClick(View arg0) {
+				if (videoStart) {
+					
+					Button locationButton = (Button) activity
+							.findViewById(R.id.locationButton);
+					String text = locationButton.getText().toString();
+					
+					if (SHARE_LOCATION.equalsIgnoreCase(text)) {
+						
+						runOnUiThread(new Thread(new Runnable() {
+							public void run() {
+								Button locationButton = (Button) activity
+										.findViewById(R.id.locationButton);
+						if (locationManager == null)
+							locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+						
+						if (waidLocationListener == null)
+							waidLocationListener = new WAIDLocationListener(activity);
+						
+					    Criteria criteria = new Criteria();
+					    String provider = locationManager.getBestProvider(criteria, false);
+					    Location location = locationManager.getLastKnownLocation(provider);
+					    
+					    
+					    if (location != null) {
+					    	waidLocationListener.sendLocation(location);
+					    	Log.i("WhatAmIdoing.onClick", "IS NOT NULL");
+					    } else {
+					    	Log.i("WhatAmIdoing.onClick", "IS NULL");
+					    }
+					    //locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, waidLocationListener);
+						//GPS location updates.
+						//locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, waidLocationListener);
+							}}));
+					} else {
+						locationButton.setText(SHARE_LOCATION);
+						locationManager.removeUpdates(waidLocationListener);
+						locationManager = null;
+					}
+					/*
+					mInvitedTaskListView = new GetInvitedTask(activity);
+					mInvitedTaskListView.execute((Void) null);	
+					*/
+				} else {
+					String message = activity.getString(R.string.camera_not_started);
 					UtilsWhatAmIdoing.displayGenericMessageDialog(activity, message);
 				}
 				
@@ -244,7 +290,7 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 		//Making buttons equal width  
 
 		GridLayout gl = (GridLayout) this.findViewById(R.id.video_display);
-		gl.requestLayout();  
+		gl.requestLayout();
 
 	}
 
@@ -256,11 +302,21 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 			Button startVideo = (Button) activity
 					.findViewById(R.id.start_video);
 			startVideo.setText(START_CAMERA);
+			
+			Button locationButton = (Button) activity
+					.findViewById(R.id.locationButton);
+			locationButton.setText(SHARE_LOCATION);
+			
 			previewRunning = false;
 			mainLayout.removeAllViews();
 			cameraView = null;
 			videoStart = false;
 			camera = null;
+			
+			if (locationManager != null) {
+				locationManager.removeUpdates(waidLocationListener);
+				locationManager = null;
+			}
 		}
 		
 		
@@ -414,6 +470,10 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 						.findViewById(R.id.viewSharers);
 				viewSharers.setEnabled(false);
 				
+				final Button shareLocation = (Button) activity
+						.findViewById(R.id.locationButton);
+				shareLocation.setEnabled(false);
+				
 				videoStart = false;
 				videoSharing = false;
 			}
@@ -429,8 +489,6 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 		runOnUiThread(new Thread(new Runnable() {
 			public void run() {
 
-				final Button startVideoButton = (Button) activity
-						.findViewById(R.id.start_video);
 				final Button startTransmissionButton = (Button) activity
 						.findViewById(R.id.start_transmission);
 				if (results) {
@@ -442,6 +500,11 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 
 					Button viewSharers = (Button) activity.findViewById(R.id.viewSharers);
 					viewSharers.setEnabled(true);
+					
+					Button locationButton = (Button) activity.findViewById(R.id.locationButton);
+					locationButton.setEnabled(true);
+					
+					
 					videoSharing = true;
 					if (cameraView != null ) {
 						cameraView.sharingHasStarted();
@@ -474,6 +537,9 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 				.findViewById(R.id.start_video);
 		startVideo.setWidth(width);
 
+		final Button shareLocation = (Button) activity
+				.findViewById(R.id.locationButton);
+		shareLocation.setWidth(width);
 		gl.requestLayout();  
 	}
 
@@ -536,7 +602,16 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 		transmissionButton.setText(START_SHARING);
 		if (cameraView != null ) {
 			cameraView.sharingHasStopepd();
-		}		
+		}
+		
+		Button locationButton = (Button) activity
+				.findViewById(R.id.locationButton);
+		locationButton.setText(SHARE_LOCATION);
+		locationButton.setEnabled(false);
+		if (locationManager != null) {
+			locationManager.removeUpdates(waidLocationListener);
+			locationManager = null;
+		}
 		
 	}
 
@@ -676,6 +751,10 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 			 if (auth != null) {
 				 DatabaseHandler.getInstance(activity).removeAuthentication(auth);
 			 }
+			if (locationManager != null) {
+				locationManager.removeUpdates(waidLocationListener);
+				locationManager = null;
+			}
 			activity.callOriginalOnBackPressed();			
 		}
 	}
