@@ -254,17 +254,22 @@ public class Login extends Activity {
 					if (authSuccessMessage.equalsIgnoreCase(connectionResult.getResult()) ||
 							newAuthSuccessMessage.equalsIgnoreCase(connectionResult.getResult())) {
 						SessionParser sessionParser = connectionHelper.getPlaySession();
+						System.out.println(1);
 						if (sessionParser != null) {
+							System.out.println(2);
 							Authentication auth = DatabaseHandler.getInstance(getApplicationContext()).getAuthentication(mEmail);
 							
 							if (auth == null) {
+								System.out.println(3);
 								auth = new Authentication(mEmail,sessionParser.getToken(),sessionParser.getPlaySession());
 							} else {
+								System.out.println(4);
 								auth.setPlaySession(sessionParser.getPlaySession());
 								auth.setToken(sessionParser.getToken());
 							}
 
 							//Saves or updates
+							System.out.println(auth);
 							DatabaseHandler.getInstance(getApplicationContext()).putAuthentication(auth);
 							result = connectionResult.getResult();
 						} else {

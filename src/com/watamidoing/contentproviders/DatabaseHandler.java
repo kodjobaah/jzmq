@@ -16,7 +16,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 		return singleton;
 	}
 
-	private static final int DATABASE_VERSION = 1;
+	private static final int DATABASE_VERSION = 2;
 	private static final String DATABASE_NAME = "whatamidoing";
 
 	private final Context context;
@@ -65,15 +65,13 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 		final Cursor cursor = db.query(Authentication.TABLE_NAME,
 				Authentication.FIELDS, Authentication.COL_ID + " IS ?",
 				new String[] { String.valueOf(id) }, null, null, null, null);
-		if (cursor == null || cursor.isAfterLast()) {
-			return null;
-		}
-
+	
 		Authentication item = null;
-		if (cursor.moveToFirst()) {
+		if ((cursor != null) && !cursor.isBeforeFirst() && !cursor.isAfterLast()){
 			item = new Authentication(cursor);
+			cursor.close();
 		}
-		cursor.close();
+		
 
 		return item;
 
@@ -84,21 +82,27 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 		int result = 0;
 		final SQLiteDatabase db = this.getWritableDatabase();
 
+		
 		if (auth.getId() != null) {
 			result += db.update(Authentication.TABLE_NAME, auth.getContent(),
 					Authentication.COL_ID + " IS ?",
 					new String[] { auth.getId() });
+
 		}
 
 		if (result > 0) {
+			
 			success = true;
 		} else {
+		
 			// Update failed or wasn't possible, insert instead
+		
 			final long id = db.insert(Authentication.TABLE_NAME, null,
 					auth.getContent());
 
 			if (id > -1) {
-
+		
+				db.close();
 				success = true;
 			}
 		}
@@ -107,6 +111,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 	}
 
 	public synchronized int removeAuthentication(final Authentication auth) {
+		
 		final SQLiteDatabase db = this.getWritableDatabase();
 		final int result = db.delete(Authentication.TABLE_NAME,
 				Authentication.COL_ID + " IS ?", new String[] { auth.getId() });

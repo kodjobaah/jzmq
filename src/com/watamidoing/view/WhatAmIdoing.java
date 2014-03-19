@@ -386,6 +386,12 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 
 				if (START_SHARING.equalsIgnoreCase(text)) {
 					startTransmission.setEnabled(true);
+					
+					if (WebsocketService.isRunning(activity)) {
+						StopReceivers stopReceivers = new StopReceivers(activity,false);
+						stopReceivers.run();
+						
+					}
 					startService(msgIntent);
 
 					if (notAbleToConnectReceiver == null) {
@@ -621,7 +627,8 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 			public void run() {
 					if (connectionClose) {
 						stopSharingAndNotifyCamera();
-					UtilsWhatAmIdoing.displayWebsocketServiceConnectionClosedDialog(activity);
+						if (!videoStart)
+							UtilsWhatAmIdoing.displayWebsocketServiceConnectionClosedDialog(activity);
 				}
 			}
 		}));
@@ -684,6 +691,7 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 		
 		Authentication auth =  DatabaseHandler.getInstance(activity).getDefaultAuthentication();
 		 if (auth != null) {
+
 			 DatabaseHandler.getInstance(activity).removeAuthentication(auth);
 		 }
 		 super.onDestroy();
@@ -699,8 +707,10 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 	class StopReceivers implements Runnable {
 
 		private WhatAmIdoing activity;
-		public StopReceivers(WhatAmIdoing activity) {
+		private Boolean callOnBackPress = true;
+		public StopReceivers(WhatAmIdoing activity, Boolean callOnBackPress) {
 			this.activity = activity;
+			this.callOnBackPress = callOnBackPress;
 		}
 		@Override
 		public void run() {
@@ -747,15 +757,21 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 			doUnbindService();
 			Intent msgIntent = new Intent(activity,com.watamidoing.transport.service.WebsocketService.class);
 			stopService(msgIntent);
-			Authentication auth =  DatabaseHandler.getInstance(activity).getDefaultAuthentication();
-			 if (auth != null) {
-				 DatabaseHandler.getInstance(activity).removeAuthentication(auth);
-			 }
+			if (callOnBackPress) {
+				Authentication auth =  DatabaseHandler.getInstance(activity).getDefaultAuthentication();
+				if (auth != null) {
+					
+					DatabaseHandler.getInstance(activity).removeAuthentication(auth);
+				}
+			}
 			if (locationManager != null) {
 				locationManager.removeUpdates(waidLocationListener);
 				locationManager = null;
 			}
-			activity.callOriginalOnBackPressed();			
+			
+			if (callOnBackPress) {
+				activity.callOriginalOnBackPressed();
+			}
 		}
 	}
 	
@@ -766,7 +782,7 @@ public class WhatAmIdoing extends Activity implements WebsocketController {
 	@Override
     public void onBackPressed() {
 		
-		StopReceivers stopReceivers = new StopReceivers(this);
+		StopReceivers stopReceivers = new StopReceivers(this,true);
 		runOnUiThread(new Thread(stopReceivers));
 		
 	}

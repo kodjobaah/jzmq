@@ -7,11 +7,13 @@ import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.Process;
+import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationCompat;
 import android.util.Base64;
 import android.util.Log;
@@ -69,7 +71,9 @@ public class WebsocketService  extends Service {
     private static  WebSocketConnection mConnection = null;
 
 
-    private volatile boolean notDone = true;;
+    private volatile boolean notDone = true;
+    
+    private static final String PREF_IS_RUNNING = "com_waid_websocket_service_is_running";
 
     /**
      * Handler of incoming messages from clients.
@@ -130,6 +134,7 @@ public class WebsocketService  extends Service {
 		sendServiceStopNotification();
 		mConnection.disconnect();
 		mConnection = null;
+		setRunning(false);
         // Cancel the persistent notification.
        // mNM.cancel(R.string.remote_service_started);
 
@@ -159,6 +164,9 @@ public class WebsocketService  extends Service {
     	Notification notification = mBuilder.build();
     	startForeground(1337, notification);
                                    ////// will do all my stuff here on in the method onStart() or onCreat()?
+    	
+    	
+    	setRunning(true);
     	return Service.START_NOT_STICKY;
     }
 
@@ -207,6 +215,19 @@ public class WebsocketService  extends Service {
        }
     }
     
+    
+    private void setRunning(boolean running) {
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        SharedPreferences.Editor editor = pref.edit();
+
+        editor.putBoolean(PREF_IS_RUNNING, running);
+        editor.apply();
+    }
+
+    public static boolean isRunning(Context ctx) {
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(ctx.getApplicationContext());
+        return pref.getBoolean(PREF_IS_RUNNING, false);
+    }
 
 	private int createSockectContext() {
 		
