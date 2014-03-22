@@ -36,12 +36,16 @@
 	<!-- Keeps the processor from sleeping when a message is received. -->
 	<!-- Alreay have WAKE_LOCK permissions -->
 	 
+	 
 	
     <application
+         
         android:allowBackup="true"
         android:icon="@drawable/icon"
         android:label="@string/app_name"
         android:theme="@android:style/Theme.Holo">
+     
+        <meta-data android:name="com.facebook.sdk.ApplicationId" android:value="@string/app_id"/>
         
          <activity
              android:name="com.watamidoing.RecordActivity"
@@ -49,7 +53,27 @@
              android:screenOrientation="landscape">
 
          </activity>
-        
+         
+         <activity
+             android:name="com.facebook.LoginActivity"
+              android:label="@string/app_name"
+             android:screenOrientation="landscape">
+
+         </activity>
+    
+                  <!-- 
+         <activity
+            android:name="com.watamidoing.facebook.MainActivity"
+            android:label="@string/title_activity_login"
+            android:windowSoftInputMode="adjustResize|stateVisible" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                  <category android:name="android.intent.category.LAUNCHER" />
+             </intent-filter>
+
+        </activity>
+          -->
+
         <activity
             android:name="com.watamidoing.Login"
             android:label="@string/title_activity_login"
@@ -60,7 +84,7 @@
              </intent-filter>
 
         </activity>
-        
+       
         
          <activity
             android:launchMode="singleTask"
@@ -68,7 +92,13 @@
             android:label="@string/welcome_message"
             android:screenOrientation="landscape"
             android:windowSoftInputMode="adjustResize" >
-             
+             	
+ 			<intent-filter>
+            <action android:name   = "android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="x-oauthflow-twitter" android:host="callback" />
+        </intent-filter>
            
         </activity>
         
