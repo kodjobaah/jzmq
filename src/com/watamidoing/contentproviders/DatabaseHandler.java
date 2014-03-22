@@ -4,6 +4,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
 
 public class DatabaseHandler extends SQLiteOpenHelper {
 
@@ -16,6 +17,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 		return singleton;
 	}
 
+	private static final String TAG ="DatabaseHandler";
 	private static final int DATABASE_VERSION = 2;
 	private static final String DATABASE_NAME = "whatamidoing";
 
@@ -30,7 +32,9 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 	@Override
 	public void onCreate(SQLiteDatabase db) {
 
+	    Log.i(TAG,"---------------------should be creating table");
 		db.execSQL(Authentication.CREATE_TABLE);
+		db.execSQL(TwitterAuthenticationToken.CREATE_TABLE);
 
 	}
 
@@ -40,6 +44,25 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 
 	}
 
+	public synchronized TwitterAuthenticationToken getDefaultTwitterAuthentication() {
+		
+		final SQLiteDatabase db = this.getReadableDatabase();
+		TwitterAuthenticationToken item = null;
+
+		Cursor cursor = db.query(TwitterAuthenticationToken.TABLE_NAME,
+				TwitterAuthenticationToken.FIELDS, null, null, null, null, null);
+		if (cursor == null || cursor.isAfterLast()) {
+			return null;
+		}
+
+		if (cursor.moveToFirst()) {
+			item = new TwitterAuthenticationToken(cursor);
+		}
+		cursor.close();
+
+		return item;
+	}
+	
 	public synchronized Authentication getDefaultAuthentication() {
 
 		final SQLiteDatabase db = this.getReadableDatabase();
@@ -59,6 +82,24 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 		return item;
 	}
 
+	public synchronized TwitterAuthenticationToken getAuthenticationTwitter(final String id) {
+
+		final SQLiteDatabase db = this.getReadableDatabase();
+		final Cursor cursor = db.query(TwitterAuthenticationToken.TABLE_NAME,
+				TwitterAuthenticationToken.FIELDS, TwitterAuthenticationToken.COL_ID + " IS ?",
+				new String[] { String.valueOf(id) }, null, null, null, null);
+	
+		TwitterAuthenticationToken item = null;
+		if ((cursor != null) && !cursor.isBeforeFirst() && !cursor.isAfterLast()){
+			item = new TwitterAuthenticationToken(cursor);
+			cursor.close();
+		}
+		
+
+		return item;
+
+	}
+	
 	public synchronized Authentication getAuthentication(final String id) {
 
 		final SQLiteDatabase db = this.getReadableDatabase();
@@ -109,12 +150,56 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 
 		return success;
 	}
+	
+	public synchronized boolean putAuthentication(final TwitterAuthenticationToken auth) {
+		boolean success = false;
+		int result = 0;
+		final SQLiteDatabase db = this.getWritableDatabase();
+
+		
+		if (auth.getId() != null) {
+			result += db.update(TwitterAuthenticationToken.TABLE_NAME, auth.getContent(),
+					TwitterAuthenticationToken.COL_ID + " IS ?",
+					new String[] { auth.getId() });
+
+		}
+
+		if (result > 0) {
+			
+			success = true;
+		} else {
+		
+			// Update failed or wasn't possible, insert instead
+		
+			final long id = db.insert(TwitterAuthenticationToken.TABLE_NAME, null,
+					auth.getContent());
+
+			if (id > -1) {
+		
+				db.close();
+				success = true;
+			}
+		}
+
+		return success;
+	}
+
 
 	public synchronized int removeAuthentication(final Authentication auth) {
 		
 		final SQLiteDatabase db = this.getWritableDatabase();
 		final int result = db.delete(Authentication.TABLE_NAME,
 				Authentication.COL_ID + " IS ?", new String[] { auth.getId() });
+
+		return result;
+	}
+	
+
+	public synchronized int removeAuthentication(final TwitterAuthenticationToken auth) {
+		
+		final SQLiteDatabase db = this.getWritableDatabase();
+		final int result = db.delete(TwitterAuthenticationToken.TABLE_NAME,
+				TwitterAuthenticationToken.COL_ID + " IS ?", new String[] { auth.getId() });
 
 		return result;
 	}

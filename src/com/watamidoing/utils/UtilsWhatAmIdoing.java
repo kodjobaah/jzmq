@@ -15,6 +15,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.waid.R;
 import com.watamidoing.Login;
@@ -63,7 +64,7 @@ public class UtilsWhatAmIdoing {
 	}
 	
 	public static void displayWebsocketProblemsDialog(Activity activity) {
-		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(activity);
+		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(activity, R.style.ThemeWithCorners);
 		// set title
 		alertDialogBuilder.setTitle(activity.getString(R.string.unable_to_share));
  
@@ -86,7 +87,7 @@ public class UtilsWhatAmIdoing {
 	}
 	
 	public static void displayNetworkProblemsDialog(Activity activity) {
-		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(activity);
+		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(activity, R.style.ThemeWithCorners);
 		// set title
 		alertDialogBuilder.setTitle(activity.getString(R.string.unable_to_connect));
  
@@ -110,7 +111,7 @@ public class UtilsWhatAmIdoing {
 	
 	
 	public static void displayNetworkProblemsForInvitesDialog(Activity activity) {
-		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(activity);
+		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(activity, R.style.ThemeWithCorners);
 		// set title
 		alertDialogBuilder.setTitle(activity.getString(R.string.unable_to_send_invites));
  
@@ -133,7 +134,7 @@ public class UtilsWhatAmIdoing {
 	}
 	
 	public static void displayNetworkProblemsForLocationDialog(Activity activity) {
-		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(activity);
+		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(activity, R.style.ThemeWithCorners);
 		// set title
 		alertDialogBuilder.setTitle(activity.getString(R.string.unable_to_send_location));
  
@@ -156,7 +157,7 @@ public class UtilsWhatAmIdoing {
 	}
 	
 	public static void displaySuccessInvitesDialog(Activity activity) {
-		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(activity);
+		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(activity, R.style.ThemeWithCorners);
 		// set title
 		alertDialogBuilder.setTitle(activity.getString(R.string.able_to_send_invites));
  
@@ -179,7 +180,7 @@ public class UtilsWhatAmIdoing {
 	}
 	
 	public static void displaySuccessLocationInformationSent(Activity activity) {
-		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(activity);
+		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(activity, R.style.ThemeWithCorners);
 		// set title
 		alertDialogBuilder.setTitle(activity.getString(R.string.able_to_send_location));
  
@@ -203,7 +204,7 @@ public class UtilsWhatAmIdoing {
 
 	public static void displayWebsocketServiceStoppedDialog(
 			Activity activity) {
-		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(activity);
+		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(activity, R.style.ThemeWithCorners);
 		// set title
 		alertDialogBuilder.setTitle(activity.getString(R.string.sharing_service_stopped));
  
@@ -230,7 +231,7 @@ public class UtilsWhatAmIdoing {
 			Activity activity) {
 		// TODO Auto-generated method stub
 		
-		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(activity);
+		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(activity, R.style.ThemeWithCorners);
 		// set title
 		alertDialogBuilder.setTitle(activity.getString(R.string.sharing_service_connection_closed));
  
@@ -256,7 +257,7 @@ public class UtilsWhatAmIdoing {
 			WhatAmIdoing activity, String message) {
 		// TODO Auto-generated method stub
 		
-		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(activity);
+		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(activity, R.style.ThemeWithCorners);
 		// set title
 		alertDialogBuilder.setTitle(activity.getString(R.string.info));
  
@@ -283,7 +284,7 @@ public class UtilsWhatAmIdoing {
 			final Activity activity, String message) {
 		// TODO Auto-generated method stub
 		
-		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(activity);
+		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(activity, R.style.ThemeWithCorners);
 		// set title
 		alertDialogBuilder.setTitle("Generic Message");
  
@@ -315,7 +316,7 @@ public class UtilsWhatAmIdoing {
 	}
 	
 	public static void displayForgotPasswordLinkDialog(final Login activity){
-		AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+		AlertDialog.Builder builder = new AlertDialog.Builder(activity, R.style.ThemeWithCorners);
 		builder.setTitle(activity.getResources().getString(R.string.reset_password_message));
 
 		LayoutInflater inflater = (LayoutInflater)activity.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -342,7 +343,7 @@ public class UtilsWhatAmIdoing {
 			final Login activity, String message) {
 		// TODO Auto-generated method stub
 		
-		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(activity);
+		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(activity, R.style.ThemeWithCorners);
 		// set title
 		alertDialogBuilder.setTitle(activity.getString(R.string.info));
  
@@ -371,5 +372,15 @@ public class UtilsWhatAmIdoing {
  
 		// show it
 		alertDialog.show();
+	}
+
+	public static void displaySuccessInvitesTwitterDialog(WhatAmIdoing context) {
+		Toast.makeText(context, "Tweeted on twitter",Toast.LENGTH_LONG ).show();
+		
+	}
+	
+	public static void displaySuccessInvitesFacebbokDialog(WhatAmIdoing context) {
+		Toast.makeText(context, "Posted on Facebook",Toast.LENGTH_LONG ).show();
+		
 	}
 }

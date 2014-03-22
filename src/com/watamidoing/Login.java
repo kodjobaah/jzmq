@@ -12,7 +12,6 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-import android.text.Html;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -61,6 +60,16 @@ public class Login extends Activity {
 
 	
 
+	
+	@Override
+	protected void onResume() {
+		
+		super.onResume();
+		Authentication auth =  DatabaseHandler.getInstance(activity).getDefaultAuthentication();
+		if (auth != null) {
+			startCamera();
+		}
+	}
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 
@@ -99,6 +108,7 @@ public class Login extends Activity {
 					@Override
 					public void onClick(View view) {
 						attemptLogin();
+						
 					}
 				});
 		findViewById(R.id.forgotten_password_button).setOnClickListener(
@@ -254,22 +264,18 @@ public class Login extends Activity {
 					if (authSuccessMessage.equalsIgnoreCase(connectionResult.getResult()) ||
 							newAuthSuccessMessage.equalsIgnoreCase(connectionResult.getResult())) {
 						SessionParser sessionParser = connectionHelper.getPlaySession();
-						System.out.println(1);
+					
 						if (sessionParser != null) {
-							System.out.println(2);
 							Authentication auth = DatabaseHandler.getInstance(getApplicationContext()).getAuthentication(mEmail);
 							
 							if (auth == null) {
-								System.out.println(3);
 								auth = new Authentication(mEmail,sessionParser.getToken(),sessionParser.getPlaySession());
 							} else {
-								System.out.println(4);
 								auth.setPlaySession(sessionParser.getPlaySession());
 								auth.setToken(sessionParser.getToken());
 							}
 
 							//Saves or updates
-							System.out.println(auth);
 							DatabaseHandler.getInstance(getApplicationContext()).putAuthentication(auth);
 							result = connectionResult.getResult();
 						} else {

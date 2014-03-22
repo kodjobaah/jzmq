@@ -71,5 +71,9 @@ public class ParseInviteList {
 		return users;
 	}
 
+	public String getOriginalList() {
+		return json.toString();
+	}
+
 
 }

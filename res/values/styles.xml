@@ -62,5 +62,7 @@
        <item name="android:background">@drawable/custom_btn_arsenic</item>
        <item name="android:padding">10dip</item>
    </style>
-
+    <color name="facebook_blue">#3B5998</color>
+    
+    <color name="text_color">#303040</color>
 </resources>

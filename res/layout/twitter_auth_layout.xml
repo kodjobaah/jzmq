@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+     android:gravity="center"
+    android:orientation="vertical" >
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/twitter_pin_label" />
+
+    <EditText
+        android:id="@+id/twitterPin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="text" >
+    </EditText>
+
+    <Button
+        android:id="@+id/twitterPinButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/twitter_pin_button" />
+
+</LinearLayout>

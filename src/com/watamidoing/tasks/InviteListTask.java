@@ -35,8 +35,6 @@ import com.watamidoing.utils.ScreenDimension;
 import com.watamidoing.utils.UtilsWhatAmIdoing;
 import com.watamidoing.view.WhatAmIdoing;
 import com.watamidoing.view.adapter.InviteListExpandableAdapter;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 public class InviteListTask extends AsyncTask<Void, Void, Boolean> {
 
@@ -61,23 +59,14 @@ public class InviteListTask extends AsyncTask<Void, Void, Boolean> {
 		mInviteStatusMessageView = (TextView) dialog.findViewById(R.id.invite_status_message);
 
 		ScreenDimension sm = UtilsWhatAmIdoing.getScreenDimensions(mContext);
-		// RelativeLayout ll = (RelativeLayout)dialog.findViewById(R.id.inviteList_layout);
-		//  ll.setLayoutParams(new FrameLayout.LayoutParams((int)(sm.getHeightPixels()*0.8f),(int)(sm.getWidthPixels()*0.8f)));
-
-
-		// WindowManager.LayoutParams lp = new WindowManager.LayoutParams((int)(sm.getHeightPixels()*0.8f),(int)(sm.getWidthPixels()*0.8f));
-		//dialog.getWindow().setAttributes(lp);
-
-
+		
 		LayoutParams params = dialog.getWindow().getAttributes();
-		// ll.setLayoutParams(new FrameLayout.LayoutParams(params.height,params.width));
-
+		
 
 
 		dialog.show();
 		showProgress(true);
-		//UtilsWhatAmIdoing.hideKeyBoard(context);
-
+	
 		//Add event listeners
 		Button cancel = (Button) dialog.findViewById(R.id.cancel_invite);
 		cancel.setOnClickListener(new View.OnClickListener() {
