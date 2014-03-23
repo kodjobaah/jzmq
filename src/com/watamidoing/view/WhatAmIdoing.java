@@ -703,9 +703,6 @@ public class WhatAmIdoing extends FragmentActivity implements
 			public void run() {
 				if (connectionClose) {
 					stopSharingAndNotifyCamera();
-					if (!videoStart)
-						UtilsWhatAmIdoing
-								.displayWebsocketServiceConnectionClosedDialog(activity);
 				}
 			}
 		}));
@@ -1219,6 +1216,14 @@ public class WhatAmIdoing extends FragmentActivity implements
 			}
 		}
 		return false;
+	}
+
+	public boolean isVideoSharing() {
+		return videoSharing;
+	}
+
+	public boolean isVideoStart() {
+		return videoStart;
 	}
 
 }

@@ -65,7 +65,7 @@ public class WebsocketService  extends Service {
      */
     static final int MSG_SET_VALUE = 3;
 
-	private static final String TAG = null;
+	private static final String TAG = "WebSocketService";
 
     private static  WebSocketConnection mConnection = null;
 
@@ -174,22 +174,22 @@ public class WebsocketService  extends Service {
      
              @Override
              public void onOpen() {
-            	 sendServiceStartedNotification();
-            	 
                 Log.d(TAG, "Status: Connected to " + wsuri);
                // mConnection.sendTextMessage("Hello, world!");
              }
      
              @Override
              public void onTextMessage(String payload) {
-                Log.d(TAG, "Got echo: " + payload);
+             
                 sendServiceStartedNotification();
+                Log.d(TAG, "Got echo: " + payload);
              }
      
              @Override
              public void onClose(int code, String reason) {
             	 sendServiceConnectionCloseNotification();
                 Log.d(TAG, "Connection lost.");
+                stopSelf();
              }
 
 			@Override

@@ -46,6 +46,7 @@ public class WebSocketActivity extends Activity implements Serializable {
 			@Override
 			public void onTextMessage(String payload) {
 				Log.d("WebSocketActivity.startTransmission", "Got echo: " + payload);
+			
 			}
 
 			@Override
