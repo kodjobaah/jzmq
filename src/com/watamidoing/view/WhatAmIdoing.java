@@ -2,8 +2,15 @@ package com.watamidoing.view;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.scribe.model.OAuthRequest;
+import org.scribe.model.Response;
+import org.scribe.model.Token;
+import org.scribe.model.Verb;
+import org.xmlpull.v1.XmlSerializer;
 
 import twitter4j.auth.AccessToken;
 import android.app.ActivityManager;
@@ -23,6 +30,7 @@ import android.hardware.Camera.PreviewCallback;
 import android.hardware.Camera.Size;
 import android.location.Criteria;
 import android.location.Location;
+import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -35,6 +43,7 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
+import android.util.Xml;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -51,22 +60,23 @@ import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.Toast;
 
-import com.facebook.FacebookException;
-import com.facebook.FacebookOperationCanceledException;
 import com.facebook.Session;
-import com.facebook.widget.WebDialog;
-import com.facebook.widget.WebDialog.OnCompleteListener;
 import com.waid.R;
 import com.watamidoing.Login;
 import com.watamidoing.contentproviders.Authentication;
 import com.watamidoing.contentproviders.DatabaseHandler;
+import com.watamidoing.contentproviders.LinkedInAuthenticationToken;
 import com.watamidoing.contentproviders.TwitterAuthenticationToken;
-import com.watamidoing.invite.FaceBookInviteDialogFragment;
+import com.watamidoing.invite.facebook.FaceBookInviteDialogFragment;
+import com.watamidoing.invite.facebook.FacebookPostTask;
+import com.watamidoing.invite.linkedin.LinkedInAuthorization;
+import com.watamidoing.invite.linkedin.SendLinkedInInviteTask;
+import com.watamidoing.invite.linkedin.ShareTag;
+import com.watamidoing.invite.twitter.SendTwitterInviteTask;
+import com.watamidoing.invite.twitter.TwitterAuthorization;
 import com.watamidoing.tasks.DoLaterTask;
-import com.watamidoing.tasks.FacebookPostTask;
 import com.watamidoing.tasks.GetInvitedTask;
 import com.watamidoing.tasks.InviteListTask;
-import com.watamidoing.tasks.SendTwitterInviteTask;
 import com.watamidoing.tasks.WAIDLocationListener;
 import com.watamidoing.tasks.callbacks.WebsocketController;
 import com.watamidoing.transport.receivers.NetworkChangeReceiver;
@@ -76,7 +86,6 @@ import com.watamidoing.transport.receivers.ServiceStartedReceiver;
 import com.watamidoing.transport.receivers.ServiceStoppedReceiver;
 import com.watamidoing.transport.service.WebsocketService;
 import com.watamidoing.transport.service.WebsocketServiceConnection;
-import com.watamidoing.twitter.TwitterAuthorization;
 import com.watamidoing.utils.ScreenDimension;
 import com.watamidoing.utils.UtilsWhatAmIdoing;
 
@@ -252,6 +261,26 @@ public class WhatAmIdoing extends FragmentActivity implements
 								if (waidLocationListener == null)
 									waidLocationListener = new WAIDLocationListener(
 											activity);
+								
+								List<String> providers = locationManager.getProviders(true);
+						        for (String provider : providers) {
+						            locationManager.requestLocationUpdates(provider, 1000L, 0.0f,
+						                    new LocationListener() {
+						                        public void onLocationChanged(Location location) {}
+
+						                        public void onProviderDisabled(String provider) {
+						                        }
+
+						                        public void onProviderEnabled(String provider) {
+						                        }
+
+						                        public void onStatusChanged(String provider,
+						                                int status, Bundle extras) {
+						                        }
+						            });
+						        }
+							
+
 
 								Criteria criteria = new Criteria();
 								String provider = locationManager
@@ -259,11 +288,22 @@ public class WhatAmIdoing extends FragmentActivity implements
 								Location location = locationManager
 										.getLastKnownLocation(provider);
 
+								if (location == null) {
+									locationManager
+									.getLastKnownLocation("network");
+									
+								}
+								
+								if (location == null) {
+									locationManager
+									.getLastKnownLocation("network");
+								}
 								if (location != null) {
 									waidLocationListener.sendLocation(location);
 									Log.i("WhatAmIdoing.onClick", "IS NOT NULL");
 								} else {
 									Log.i("WhatAmIdoing.onClick", "IS NULL");
+									 Toast.makeText(getApplicationContext(), "Location Currently Not Available",Toast.LENGTH_SHORT).show();
 								}
 								// locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
 								// 0, 0, waidLocationListener);
@@ -1078,6 +1118,9 @@ public class WhatAmIdoing extends FragmentActivity implements
 	public boolean onCreateOptionsMenu(Menu menu) {
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.main, menu);
+		
+		menu.findItem(R.id.linkedin_menu_item).setIcon(
+				resizeImage(R.drawable.linkedin, 100, 95));
 		menu.findItem(R.id.facebook_menu_item).setIcon(
 				resizeImage(R.drawable.facebook, 108, 108));
 		menu.findItem(R.id.twitter_menu_item).setIcon(
@@ -1123,10 +1166,18 @@ public class WhatAmIdoing extends FragmentActivity implements
 
 			TwitterAuthenticationToken tat = DatabaseHandler.getInstance(
 					activity).getDefaultTwitterAuthentication();
-			if (tat == null) {
+			if (tat != null) {
 				DatabaseHandler.getInstance(activity).removeAuthentication(tat);
 
 			}
+			
+			LinkedInAuthenticationToken la = DatabaseHandler.getInstance(
+					activity).getDefaultLinkedinAuthentication();
+			if (la != null) {
+				DatabaseHandler.getInstance(activity).removeAuthentication(la);
+
+			}
+
 			Intent intent = new Intent(this, Login.class);
 			startActivity(intent);
 
@@ -1137,7 +1188,17 @@ public class WhatAmIdoing extends FragmentActivity implements
 		}
 
 		if (videoStart && !skip && videoSharing) {
-			if (itemId == R.id.facebook_menu_item) {
+			
+			if (itemId == R.id.linkedin_menu_item) {
+				LinkedInAuthorization ta = new LinkedInAuthorization(activity);
+				Token accessToken = ta.getAccessToken();
+				if (accessToken == null) {
+					ta.authorizeLinkedIn();
+				} else {
+					shareOnLinkedIn();
+				}
+				return true;
+			} else if (itemId == R.id.facebook_menu_item) {
 				shareOnFacebook();
 				return true;
 			} else if (itemId == R.id.email_menu_item) {
@@ -1164,6 +1225,22 @@ public class WhatAmIdoing extends FragmentActivity implements
 		return false;
 	}
 
+	public void shareOnLinkedIn() {
+		LinkedInAuthorization la = new LinkedInAuthorization(activity);
+		Token accessToken = la.getAccessToken();
+		if (accessToken != null) {
+			String inviteUrl = activity
+					.getString(R.string.send_invite_linkedin_url);
+			Authentication auth = DatabaseHandler.getInstance(activity)
+					.getDefaultAuthentication();
+			String url = inviteUrl + "?token=" + auth.getToken();
+			SendLinkedInInviteTask stit = new SendLinkedInInviteTask(url,
+					activity);
+			stit.execute((Void) null);
+
+		}
+		
+	}
 	public void tweetWhatIAmDoing() {
 		TwitterAuthorization ta = new TwitterAuthorization(activity);
 		AccessToken accessToken = ta.getAccessToken();

@@ -35,6 +35,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 	    Log.i(TAG,"---------------------should be creating table");
 		db.execSQL(Authentication.CREATE_TABLE);
 		db.execSQL(TwitterAuthenticationToken.CREATE_TABLE);
+		db.execSQL(LinkedInAuthenticationToken.CREATE_TABLE);
 
 	}
 
@@ -63,6 +64,25 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 		return item;
 	}
 	
+public synchronized LinkedInAuthenticationToken getDefaultLinkedinAuthentication() {
+		
+		final SQLiteDatabase db = this.getReadableDatabase();
+		LinkedInAuthenticationToken item = null;
+
+		Cursor cursor = db.query(LinkedInAuthenticationToken.TABLE_NAME,
+				LinkedInAuthenticationToken.FIELDS, null, null, null, null, null);
+		if (cursor == null || cursor.isAfterLast()) {
+			return null;
+		}
+
+		if (cursor.moveToFirst()) {
+			item = new LinkedInAuthenticationToken(cursor);
+		}
+		cursor.close();
+
+		return item;
+	}
+	
 	public synchronized Authentication getDefaultAuthentication() {
 
 		final SQLiteDatabase db = this.getReadableDatabase();
@@ -80,6 +100,25 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 		cursor.close();
 
 		return item;
+	}
+
+
+	public synchronized LinkedInAuthenticationToken getAuthenticationLinkedin(final String id) {
+
+		final SQLiteDatabase db = this.getReadableDatabase();
+		final Cursor cursor = db.query(LinkedInAuthenticationToken.TABLE_NAME,
+				LinkedInAuthenticationToken.FIELDS, TwitterAuthenticationToken.COL_ID + " IS ?",
+				new String[] { String.valueOf(id) }, null, null, null, null);
+	
+		LinkedInAuthenticationToken item = null;
+		if ((cursor != null) && !cursor.isBeforeFirst() && !cursor.isAfterLast()){
+			item = new LinkedInAuthenticationToken(cursor);
+			cursor.close();
+		}
+		
+
+		return item;
+
 	}
 
 	public synchronized TwitterAuthenticationToken getAuthenticationTwitter(final String id) {
@@ -184,6 +223,39 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 		return success;
 	}
 
+	public synchronized boolean putAuthentication(final LinkedInAuthenticationToken auth) {
+		boolean success = false;
+		int result = 0;
+		final SQLiteDatabase db = this.getWritableDatabase();
+
+		
+		if (auth.getId() != null) {
+			result += db.update(LinkedInAuthenticationToken.TABLE_NAME, auth.getContent(),
+					LinkedInAuthenticationToken.COL_ID + " IS ?",
+					new String[] { auth.getId() });
+
+		}
+
+		if (result > 0) {
+			
+			success = true;
+		} else {
+		
+			// Update failed or wasn't possible, insert instead
+		
+			final long id = db.insert(LinkedInAuthenticationToken.TABLE_NAME, null,
+					auth.getContent());
+
+			if (id > -1) {
+		
+				db.close();
+				success = true;
+			}
+		}
+
+		return success;
+	}
+
 
 	public synchronized int removeAuthentication(final Authentication auth) {
 		
@@ -200,6 +272,17 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 		final SQLiteDatabase db = this.getWritableDatabase();
 		final int result = db.delete(TwitterAuthenticationToken.TABLE_NAME,
 				TwitterAuthenticationToken.COL_ID + " IS ?", new String[] { auth.getId() });
+
+		return result;
+	}
+	
+	
+
+	public synchronized int removeAuthentication(final LinkedInAuthenticationToken auth) {
+		
+		final SQLiteDatabase db = this.getWritableDatabase();
+		final int result = db.delete(LinkedInAuthenticationToken.TABLE_NAME,
+				LinkedInAuthenticationToken.COL_ID + " IS ?", new String[] { auth.getId() });
 
 		return result;
 	}

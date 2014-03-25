@@ -1,4 +1,4 @@
-package com.watamidoing.twitter;
+package com.watamidoing.invite.twitter;
 
 import twitter4j.Twitter;
 import twitter4j.TwitterException;

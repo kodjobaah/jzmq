@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    
+    <item android:id="@+id/linkedin_menu_item"
+          android:icon="@drawable/linkedin"
+          android:title="@string/linkedin_menu_names"
+          android:showAsAction="ifRoom"/>
+    
     <item android:id="@+id/facebook_menu_item"
           android:icon="@drawable/facebook"
           android:title="@string/facebook_menu_names"

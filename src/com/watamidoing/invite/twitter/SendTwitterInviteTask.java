@@ -1,4 +1,4 @@
-package com.watamidoing.tasks;
+package com.watamidoing.invite.twitter;
 
 import java.net.HttpURLConnection;
 
@@ -6,7 +6,6 @@ import twitter4j.Twitter;
 import twitter4j.TwitterException;
 import twitter4j.auth.AccessToken;
 
-import com.watamidoing.twitter.TwitterAuthorization;
 import com.watamidoing.utils.ConnectionResult;
 import com.watamidoing.utils.HttpConnectionHelper;
 import com.watamidoing.utils.UtilsWhatAmIdoing;

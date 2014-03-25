@@ -1,4 +1,4 @@
-package com.watamidoing.invite;
+package com.watamidoing.invite.facebook;
 import com.waid.R;
 
 import android.app.AlertDialog;

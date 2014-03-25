@@ -152,7 +152,7 @@ public class WebsocketService  extends Service {
     	
     	NotificationCompat.Builder mBuilder =
     		    new NotificationCompat.Builder(this)
-    		    .setSmallIcon(R.drawable.custom_btn_arsenic)
+    		    .setSmallIcon(R.drawable.ic_cable_connect)
     		    .setContentTitle("What Am I doing")
     		    .setContentText("sharing");
     	

@@ -1,4 +1,4 @@
-package com.watamidoing.tasks;
+package com.watamidoing.invite.facebook;
 import android.os.AsyncTask;
 
 import com.facebook.widget.WebDialog;

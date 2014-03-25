@@ -1,4 +1,4 @@
-package com.watamidoing.tasks;
+package com.watamidoing.invite.facebook;
 
 import java.net.HttpURLConnection;
 
@@ -11,7 +11,7 @@ import com.facebook.FacebookOperationCanceledException;
 import com.facebook.Session;
 import com.facebook.widget.WebDialog;
 import com.facebook.widget.WebDialog.OnCompleteListener;
-import com.watamidoing.twitter.TwitterAuthorization;
+import com.watamidoing.invite.twitter.TwitterAuthorization;
 import com.watamidoing.utils.ConnectionResult;
 import com.watamidoing.utils.HttpConnectionHelper;
 import com.watamidoing.utils.UtilsWhatAmIdoing;

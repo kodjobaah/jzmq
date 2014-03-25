@@ -374,6 +374,17 @@ public class UtilsWhatAmIdoing {
 		alertDialog.show();
 	}
 
+
+	public static void displayNotAbleToUpdateLinkedInStatusDialog(WhatAmIdoing context) {
+		Toast.makeText(context, context.getString(R.string.linkedin_status_update_problem),Toast.LENGTH_LONG ).show();
+		
+	}
+
+	public static void displaySuccessInvitesLinkedInDialog(WhatAmIdoing context) {
+		Toast.makeText(context,context.getString(R.string.linkedin_status_update_success),Toast.LENGTH_LONG ).show();
+		
+	}
+
 	public static void displaySuccessInvitesTwitterDialog(WhatAmIdoing context) {
 		Toast.makeText(context, "Tweeted on twitter",Toast.LENGTH_LONG ).show();
 		
