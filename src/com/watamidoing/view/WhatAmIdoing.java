@@ -5,6 +5,11 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.scribe.model.OAuthRequest;
 import org.scribe.model.Response;
@@ -34,6 +39,7 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
@@ -58,6 +64,7 @@ import android.widget.Button;
 import android.widget.GridLayout;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.facebook.Session;
@@ -77,6 +84,7 @@ import com.watamidoing.invite.twitter.TwitterAuthorization;
 import com.watamidoing.tasks.DoLaterTask;
 import com.watamidoing.tasks.GetInvitedTask;
 import com.watamidoing.tasks.InviteListTask;
+import com.watamidoing.tasks.TotalUsersWatchingTask;
 import com.watamidoing.tasks.WAIDLocationListener;
 import com.watamidoing.tasks.callbacks.WebsocketController;
 import com.watamidoing.transport.receivers.NetworkChangeReceiver;
@@ -142,6 +150,9 @@ public class WhatAmIdoing extends FragmentActivity implements
 	protected FaceBookInviteDialogFragment inviteDialogFragment;
 	public boolean callingFromResume = false;
 
+	protected TotalUsersWatchingTask totalUsersWatchingTask;
+
+	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -152,10 +163,13 @@ public class WhatAmIdoing extends FragmentActivity implements
 			StrictMode.setThreadPolicy(policy);
 		}
 
+	   
 		mConnection = new WebsocketServiceConnection(this, this);
 		setContentView(R.layout.options);
 		activity = this;
 
+
+		
 		// Setting up camera selection
 		int cameraCount = 0;
 		Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
@@ -622,13 +636,38 @@ public class WhatAmIdoing extends FragmentActivity implements
 					if (cameraView != null) {
 						cameraView.sharingHasStarted();
 					}
-
+					
+					totalUsersWatchingTask = new TotalUsersWatchingTask(activity);
+					totalUsersWatchingTask.execute((Void)null);
+					
+					
 				}
 			}
 		}));
 
 	}
 
+  public void updateTotalViews(final String watchers) {
+	  
+	  
+	  if (isVideoSharing()) {
+		  runOnUiThread(new Thread(new Runnable() {
+				public void run() {
+
+					
+					if (watchers != null) {
+					final TextView totalWatchers = (TextView) activity
+							.findViewById(R.id.totalWatchers);
+					totalWatchers.setText(watchers);
+					}
+					totalUsersWatchingTask = new TotalUsersWatchingTask(activity);
+					totalUsersWatchingTask.execute((Void)null);
+				}
+		  }));
+	  }
+  }
+		
+	
 	@Override
 	public void onWindowFocusChanged(boolean hasFocus) {
 		super.onWindowFocusChanged(hasFocus);
@@ -648,6 +687,10 @@ public class WhatAmIdoing extends FragmentActivity implements
 		final Button shareLocation = (Button) activity
 				.findViewById(R.id.locationButton);
 		shareLocation.setWidth(width);
+		
+		final TextView totalWatchers = (TextView) activity
+				.findViewById(R.id.totalWatchers);
+		totalWatchers.setWidth(width);
 		gl.requestLayout();
 	}
 
@@ -734,7 +777,11 @@ public class WhatAmIdoing extends FragmentActivity implements
 			locationManager.removeUpdates(waidLocationListener);
 			locationManager = null;
 		}
-
+		final TextView totalWatchers = (TextView) activity
+				.findViewById(R.id.totalWatchers);
+		totalWatchers.setText("");
+		
+		
 	}
 
 	@Override

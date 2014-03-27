@@ -1,22 +1,9 @@
 package com.watamidoing.invite.linkedin;
 
-import java.io.IOException;
-import java.io.StringWriter;
-import java.util.HashMap;
-import java.util.List;
-
-import javax.xml.parsers.DocumentBuilder;
-
-import org.codehaus.jackson.annotate.JsonValue;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.scribe.builder.ServiceBuilder;
 import org.scribe.builder.api.LinkedInApi;
-import org.scribe.model.OAuthRequest;
-import org.scribe.model.Response;
 import org.scribe.model.SignatureType;
 import org.scribe.model.Token;
-import org.scribe.model.Verb;
 import org.scribe.model.Verifier;
 import org.scribe.oauth.OAuthService;
 
@@ -24,7 +11,6 @@ import android.app.Dialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.util.Log;
-import android.util.Xml;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -33,11 +19,6 @@ import com.waid.R;
 import com.watamidoing.contentproviders.DatabaseHandler;
 import com.watamidoing.contentproviders.LinkedInAuthenticationToken;
 import com.watamidoing.view.WhatAmIdoing;
-
-import org.springframework.social.linkedin.LinkedInProfile;
-import org.springframework.social.linkedin.LinkedInTemplate;
-import org.w3c.dom.Document;
-import org.xmlpull.v1.XmlSerializer;
 
 public class LinkedInAuthorization {
 
