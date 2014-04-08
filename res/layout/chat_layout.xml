@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    	xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical" >
+
+    <LinearLayout
+    android:baselineAligned="false" 
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal">
+
+    <ListView
+        android:id="@+id/chatWindow"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_margin="2dp"
+        android:layout_weight=".75" />
+
+    <ListView
+     	android:id="@+id/chatParticipants"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_margin="2dp"
+        android:layout_weight=".25" />
+    
+	</LinearLayout>
+	<RelativeLayout
+	    android:layout_width="fill_parent"
+	    android:layout_height="wrap_content"
+        >	
+	    
+	    <Button 
+             android:id="@+id/sendChat"
+              android:layout_alignParentTop="true"
+             android:layout_width="wrap_content"
+             android:layout_height="wrap_content"
+             android:clickable="true"
+             android:text="@string/send_message_button" /> 
+     
+	    <EditText
+	    	style="@style/btnStyleArsenic"
+             android:id="@+id/chatMessage"
+              android:layout_toRightOf="@id/sendChat"
+          	android:layout_height="wrap_content" 
+          	android:layout_width="fill_parent"
+             
+     />
+     
+        
+     </RelativeLayout>
+     
+   </LinearLayout> 

@@ -394,4 +394,9 @@ public class UtilsWhatAmIdoing {
 		Toast.makeText(context, "Posted on Facebook",Toast.LENGTH_LONG ).show();
 		
 	}
+	
+	public static void displayGenericToast(Activity context, String message) {
+		Toast.makeText(context, message,Toast.LENGTH_LONG ).show();
+		
+	}
 }

@@ -102,14 +102,9 @@
            
         </activity>
         
-        <activity
-            android:launchMode="singleTask"
-            android:name="com.watamidoing.view.WebSocketActivity"
-            android:label="@string/app_name"
-            android:theme="@android:style/Theme.NoDisplay" >
 
-        </activity>
-        
+        <service android:name="com.watamidoing.xmpp.service.XMPPService"
+            android:process=":xmppservice"/>
                                       
          <service android:name="com.watamidoing.transport.service.WebsocketService"
        	 android:process=":websocketservice" />

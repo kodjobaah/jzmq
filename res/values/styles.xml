@@ -1,5 +1,7 @@
 <resources>
 
+    
+    
     <!--
         Base application theme, dependent on API level. This theme is replaced
         by AppBaseTheme from res/values-vXX/styles.xml on newer devices.
@@ -65,4 +67,15 @@
     <color name="facebook_blue">#3B5998</color>
     
     <color name="text_color">#303040</color>
+    
+    <style name="CustomDialog" parent="android:style/Theme.Dialog">
+    <item name="android:windowIsTranslucent">true</item> 
+    <item name="android:alwaysDrawnWithCache">false</item>
+    <!-- <item name="android:windowContentOverlay">@null</item>
+ 
+     <item name="android:windowBackground">@android:color/transparent</item>
+      -->
+    
+</style>
+
 </resources>
