@@ -1,4 +1,4 @@
-package com.watamidoing.tasks;
+package com.watamidoing.total.service;
 
 import java.net.HttpURLConnection;
 import java.util.concurrent.ExecutorService;
@@ -19,12 +19,12 @@ import com.watamidoing.view.WhatAmIdoing;
 public class TotalUsersWatchingTask extends AsyncTask<Void, Void, Boolean> {
 
 	private static final String TAG = "TotalUsersWatchingTask";
-	private WhatAmIdoing context;
-	private Object totalWatchingUrl;
+	private TotalWatchersService context;
+	private String totalWatchingUrl;
 	private String token;
 	private String watchers;
 
-	public TotalUsersWatchingTask(WhatAmIdoing context) {
+	public TotalUsersWatchingTask(TotalWatchersService context) {
 
 		this.context = context;
 		totalWatchingUrl = context.getString(R.string.total_watching_url);
@@ -35,8 +35,7 @@ public class TotalUsersWatchingTask extends AsyncTask<Void, Void, Boolean> {
 
 	@Override
 	protected Boolean doInBackground(Void... params) {
-		if (context.isVideoSharing() && context.isVideoStart()) {
-
+		
 			HttpConnectionHelper connectionHelper = new HttpConnectionHelper();
 			try {
 				String urlVal = totalWatchingUrl + "=" + token;
@@ -62,35 +61,20 @@ public class TotalUsersWatchingTask extends AsyncTask<Void, Void, Boolean> {
 				connectionHelper.closeConnection();
 			}
 			return true;
-		}
-		return false;
+		
 
 	}
 
 	@Override
 	protected void onPostExecute(final Boolean success) {
 
-		 ExecutorService executor = Executors.newFixedThreadPool(1);
-		 executor.execute(new Runnable() {
+		
+		if (success) {
+			context.updateTotalViews(watchers);
+		} else {
+			context.updateTotalViews(null);
+		}
 			
-			@Override
-			public void run() {
-				try {
-					Thread.sleep(1000);
-
-					if (success) {
-						context.updateTotalViews(watchers);
-					} else {
-						context.updateTotalViews(null);
-					}
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			
-			}
-		});
-	
 	}
 
 }

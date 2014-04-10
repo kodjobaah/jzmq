@@ -3,6 +3,7 @@ package com.watamidoing.utils;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Service;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Point;
@@ -397,6 +398,13 @@ public class UtilsWhatAmIdoing {
 	
 	public static void displayGenericToast(Activity context, String message) {
 		Toast.makeText(context, message,Toast.LENGTH_LONG ).show();
+		
+	}
+
+	public static void displayGenericToast(Service service,
+			String message) {
+		Toast.makeText(service, message,Toast.LENGTH_LONG ).show();
+		// TODO Auto-generated method stub
 		
 	}
 }

@@ -1,6 +1,6 @@
 package com.watamidoing.transport.service;
 
-import com.watamidoing.tasks.callbacks.WebsocketController;
+import com.watamidoing.reeiver.callbacks.WebsocketController;
 import com.watamidoing.utils.UtilsWhatAmIdoing;
 
 import android.app.Activity;

@@ -1,4 +1,4 @@
-package com.watamidoing.xmpp.service;
+package com.watamidoing.chat.xmpp.service;
 
 import org.jivesoftware.smack.XMPPConnection;
 

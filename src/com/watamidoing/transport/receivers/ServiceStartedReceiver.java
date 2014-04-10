@@ -5,7 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
-import com.watamidoing.tasks.callbacks.WebsocketController;
+import com.watamidoing.reeiver.callbacks.WebsocketController;
 
 public class ServiceStartedReceiver extends BroadcastReceiver {
 

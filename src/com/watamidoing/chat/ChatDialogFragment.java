@@ -17,19 +17,24 @@ import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.GridLayout;
+import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
 
 import com.waid.R;
+import com.watamidoing.chat.xmpp.service.XMPPService;
+import com.watamidoing.utils.UtilsWhatAmIdoing;
 import com.watamidoing.view.WhatAmIdoing;
-import com.watamidoing.xmpp.service.XMPPService;
 
 public class ChatDialogFragment extends DialogFragment {
 
 	protected static final String TAG = "ChatDialogFragment";
 	private static WhatAmIdoing context;
 	private static Messenger messenger;
-	private LinkedList<String> pendingMessages = new LinkedList<String>();
-	private LinkedList<String>pendingParticipantsMessages =  new LinkedList<String>();
+	private LinkedList<String> pendingMessages;
+	private LinkedList<String>pendingParticipantsMessages;
 	/**
 	 * Create a new instance of MyDialogFragment, providing "num" as an
 	 * argument.
@@ -49,6 +54,8 @@ public class ChatDialogFragment extends DialogFragment {
 	private ListView messageView;
 	private ParticipantMessageAdapter pma;
 	private ListView participantsView;
+	private View chatLayoutView;
+	private Button sendMessage;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -60,28 +67,22 @@ public class ChatDialogFragment extends DialogFragment {
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 			Bundle savedInstanceState) {
 		getDialog().getWindow().setBackgroundDrawable(new ColorDrawable(0));
-		View v = inflater.inflate(R.layout.chat_layout, container, false);
+		chatLayoutView = inflater.inflate(R.layout.chat_layout, container, false);
 
-		Button sendMessage = (Button) v.findViewById(R.id.sendChat);
-		chatMessage = (EditText) v.findViewById(R.id.chatMessage);
-
-		// String[] values = new String[] { "Android", "iPhone",
-		// "WindowsMobile",
-		// "Blackberry", "WebOS", "Ubuntu", "Windows7", "Max OS X",
-		// "Linux", "OS/2", "Ubuntu", "Windows7", "Max OS X", "Linux",
-		// "OS/2", "Ubuntu", "Windows7", "Max OS X", "Linux", "OS/2",
-		// "Android", "iPhone", "WindowsMobile" };
+	    sendMessage = (Button) chatLayoutView.findViewById(R.id.sendChat);
+		chatMessage = (EditText) chatLayoutView.findViewById(R.id.chatMessage);
 
 		String[] values = {};
 		cma = new ChatMessageAdapter(context, values);
 		pma = new ParticipantMessageAdapter(context, values);
 		
-		messageView = (ListView) v.findViewById(R.id.chatWindow);
-		participantsView = (ListView) v.findViewById(R.id.chatParticipants);
+		messageView = (ListView) chatLayoutView.findViewById(R.id.chatWindow);
+		participantsView = (ListView) chatLayoutView.findViewById(R.id.chatParticipants);
 		participantsView.setAdapter(pma);
 		sendMessage.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				String message = chatMessage.getText().toString();
+				if (message.length() > 0) {
 				Message msgObj = Message.obtain(null,
 						XMPPService.PUSH_MESSAGE_TO_QUEUE);
 				Bundle b = new Bundle();
@@ -95,35 +96,44 @@ public class ChatDialogFragment extends DialogFragment {
 					e.printStackTrace();
 				}
 				
-				
-
-				/*
-				 * String getGroupJidUrl =
-				 * context.getString(R.string.xmmp_roomjid_url); Authentication
-				 * auth =
-				 * DatabaseHandler.getInstance(context).getDefaultAuthentication
-				 * ();
-				 * 
-				 * String url = getGroupJidUrl+"?token="+auth.getToken();
-				 * Log.i(TAG,url);
-				 * 
-				 * GetGroupIdTask ggit = new GetGroupIdTask(url, context);
-				 * ggit.execute((Void)null);
-				 */
+				} else {
+					UtilsWhatAmIdoing.displayGenericToast(context, "Enter Some Text");
+				}
+	
 			}
 		});
-
 		messageView.setAdapter(cma);
-		return v;
+		
+		chatLayoutView.post(new Runnable() {
+			@Override
+			public void run() {
+				int height = sendMessage.getHeight();
+
+				chatMessage.getLayoutParams().height = height;
+				RelativeLayout sendChatLayout = (RelativeLayout)chatLayoutView.findViewById(R.id.sendChatLayout);
+				sendChatLayout.requestLayout();
+			}
+		});
+		return chatLayoutView;
 	}
 
 	@Override 
 	public void onStart(){
 		super.onStart();
+		if (pendingMessages != null) {
 		String oldMessage = pendingMessages.poll();
 		while(oldMessage != null) {
 			addMessage(oldMessage);
 			oldMessage = pendingMessages.poll();
+		}
+		}
+		
+		if (pendingParticipantsMessages != null) {
+			String oldMessage = pendingParticipantsMessages.poll();
+			while(oldMessage != null) {
+				addParticipant(oldMessage);
+				oldMessage = pendingParticipantsMessages.poll();
+			}
 		}
 	}
 	
@@ -131,14 +141,32 @@ public class ChatDialogFragment extends DialogFragment {
 	@Override
 	public void onResume() {
 		super.onResume();
+		/*
+		
+		*/
+	//	chatMessage.setLayoutParams(new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT,(int) (height)));
+
 		if (cma != null) 
 		cma.notifyDataSetChanged();
+	}
+	
+	@Override
+	public void onPause() {
+		super.onPause();
+	//	int height = sendMessage.getHeight();
+		//chatMessage.setLayoutParams(new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,(int) (height)));
+		
+		
+
 	}
 
 	
 	public void addMessage(String message) {
 		
 		if (cma == null) {
+			if (pendingMessages == null) 
+				pendingMessages = new LinkedList<String>();
+			
 			pendingMessages.add(message);
 		} else {
 		String[] oldValues = cma.getValues();
@@ -172,6 +200,8 @@ public class ChatDialogFragment extends DialogFragment {
 	public void addParticipant(String message) {
 		
 		if (pma == null) {
+			if (pendingParticipantsMessages == null)
+				pendingParticipantsMessages = new LinkedList<String>();
 			pendingParticipantsMessages.add(message);
 		} else {
 		String[] oldValues = pma.getValues();
@@ -203,6 +233,12 @@ public class ChatDialogFragment extends DialogFragment {
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
+		pma = null;
+		cma = null;
+		pendingMessages = null;
+		pendingParticipantsMessages = null;
 		context.stopChatService();
 	}
+	
+	
 }

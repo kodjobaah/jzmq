@@ -6,44 +6,53 @@
     android:layout_height="wrap_content"
     android:orientation="vertical" >
 
-    <LinearLayout
-    android:baselineAligned="false" 
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:orientation="horizontal">
-
-    <ListView
-        android:id="@+id/chatWindow"
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_margin="2dp"
-        android:layout_weight=".75" />
-
-    <ListView
-     	android:id="@+id/chatParticipants"
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_margin="2dp"
-        android:layout_weight=".25" />
     
-	</LinearLayout>
-	<RelativeLayout
-	    android:layout_width="fill_parent"
+      <LinearLayout 
+        android:baselineAligned="false" 
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:divider="@drawable/divider"
+        android:orientation="horizontal" >
+
+        <ListView
+                android:id="@+id/chatWindow"
+        			android:layout_width="0dp"
+        			android:layout_height="match_parent"
+        			android:layout_margin="2dp"
+        			android:layout_weight=".25" />
+   
+            <ListView
+                android:id="@+id/chatParticipants"
+        			android:layout_width="0dp"
+        			android:layout_height="match_parent"
+        			android:layout_margin="2dp"
+        			android:layout_weight=".75"  />
+            
+        </LinearLayout>
+
+
+    	<RelativeLayout
+    	    android:id="@+id/sendChatLayout"
+	    android:layout_width="wrap_content"
 	    android:layout_height="wrap_content"
         >	
 	    
 	    <Button 
+	        style="@style/btnStyleArsenic"
              android:id="@+id/sendChat"
-              android:layout_alignParentTop="true"
+             android:layout_alignParentTop="true"
              android:layout_width="wrap_content"
              android:layout_height="wrap_content"
              android:clickable="true"
              android:text="@string/send_message_button" /> 
      
 	    <EditText
-	    	style="@style/btnStyleArsenic"
-             android:id="@+id/chatMessage"
-              android:layout_toRightOf="@id/sendChat"
+	        android:background="@drawable/chat_edit_text"
+	        android:inputType="text"
+	        android:textColor="#000000"
+	        android:textSize="15sp"
+	        android:id="@+id/chatMessage"
+            android:layout_toRightOf="@id/sendChat"
           	android:layout_height="wrap_content" 
           	android:layout_width="fill_parent"
              

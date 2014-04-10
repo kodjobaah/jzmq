@@ -1,10 +1,10 @@
-package com.watamidoing.transport.receivers;
+package com.watamidoing.chat.xmpp.receivers;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
-import com.watamidoing.tasks.callbacks.XMPPConnectionController;
+import com.watamidoing.reeiver.callbacks.XMPPConnectionController;
 
 public class ChatEnabledReceiver extends BroadcastReceiver {
 

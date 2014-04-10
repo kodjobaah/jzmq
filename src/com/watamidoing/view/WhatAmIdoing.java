@@ -72,6 +72,11 @@ import com.facebook.Session;
 import com.waid.R;
 import com.watamidoing.Login;
 import com.watamidoing.chat.ChatDialogFragment;
+import com.watamidoing.chat.xmpp.receivers.ChatEnabledReceiver;
+import com.watamidoing.chat.xmpp.receivers.ChatMessageReceiver;
+import com.watamidoing.chat.xmpp.receivers.ChatParticipantReceiver;
+import com.watamidoing.chat.xmpp.service.XMPPService;
+import com.watamidoing.chat.xmpp.service.XMPPServiceConnection;
 import com.watamidoing.contentproviders.Authentication;
 import com.watamidoing.contentproviders.DatabaseHandler;
 import com.watamidoing.contentproviders.LinkedInAuthenticationToken;
@@ -83,16 +88,16 @@ import com.watamidoing.invite.linkedin.SendLinkedInInviteTask;
 import com.watamidoing.invite.linkedin.ShareTag;
 import com.watamidoing.invite.twitter.SendTwitterInviteTask;
 import com.watamidoing.invite.twitter.TwitterAuthorization;
+import com.watamidoing.reeiver.callbacks.TotalWatchersController;
+import com.watamidoing.reeiver.callbacks.WebsocketController;
+import com.watamidoing.reeiver.callbacks.XMPPConnectionController;
 import com.watamidoing.tasks.DoLaterTask;
 import com.watamidoing.tasks.GetInvitedTask;
 import com.watamidoing.tasks.InviteListTask;
-import com.watamidoing.tasks.TotalUsersWatchingTask;
 import com.watamidoing.tasks.WAIDLocationListener;
-import com.watamidoing.tasks.callbacks.WebsocketController;
-import com.watamidoing.tasks.callbacks.XMPPConnectionController;
-import com.watamidoing.transport.receivers.ChatEnabledReceiver;
-import com.watamidoing.transport.receivers.ChatMessageReceiver;
-import com.watamidoing.transport.receivers.ChatParticipantReceiver;
+import com.watamidoing.total.receivers.TotalWatchersReceiver;
+import com.watamidoing.total.service.TotalUsersWatchingTask;
+import com.watamidoing.total.service.TotalWatchersService;
 import com.watamidoing.transport.receivers.NetworkChangeReceiver;
 import com.watamidoing.transport.receivers.NotAbleToConnectReceiver;
 import com.watamidoing.transport.receivers.ServiceConnectionCloseReceiver;
@@ -102,12 +107,11 @@ import com.watamidoing.transport.service.WebsocketService;
 import com.watamidoing.transport.service.WebsocketServiceConnection;
 import com.watamidoing.utils.ScreenDimension;
 import com.watamidoing.utils.UtilsWhatAmIdoing;
-import com.watamidoing.xmpp.service.XMPPService;
-import com.watamidoing.xmpp.service.XMPPServiceConnection;
 
 import org.jivesoftware.smack.SmackAndroid;
+
 public class WhatAmIdoing extends FragmentActivity implements
-		WebsocketController, XMPPConnectionController  {
+		WebsocketController, XMPPConnectionController, TotalWatchersController {
 
 	public static final Uri FRIEND_PICKER = Uri.parse("picker://friend");
 
@@ -176,35 +180,30 @@ public class WhatAmIdoing extends FragmentActivity implements
 	private ChatEnabledReceiver chatEnabledReceiver;
 
 	private LinkedList<String> chatMessageQueue = new LinkedList<String>();
-	
+
 	private LinkedList<String> chatParticipantQueue = new LinkedList<String>();
 
 	private IntentFilter chatParticipantReceiverFilter;
 
 	private ChatParticipantReceiver chatParticipantReceiver;
 
-	
+	protected TotalWatchersReceiver totalWatchersReceiver;
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		
-		//Initializing the asmack libraries
-		SmackAndroid.init(this);
 		if (android.os.Build.VERSION.SDK_INT > 8) {
 			StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
 					.permitAll().build();
 			StrictMode.setThreadPolicy(policy);
 		}
 
-	   
 		mConnection = new WebsocketServiceConnection(this, this);
-		xmppServiceConnection = new XMPPServiceConnection(this,this);
+		xmppServiceConnection = new XMPPServiceConnection(this, this);
 		setContentView(R.layout.options);
 		activity = this;
 
-
-		
 		// Setting up camera selection
 		int cameraCount = 0;
 		Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
@@ -310,26 +309,32 @@ public class WhatAmIdoing extends FragmentActivity implements
 								if (waidLocationListener == null)
 									waidLocationListener = new WAIDLocationListener(
 											activity);
-								
-								List<String> providers = locationManager.getProviders(true);
-						        for (String provider : providers) {
-						            locationManager.requestLocationUpdates(provider, 1000L, 0.0f,
-						                    new LocationListener() {
-						                        public void onLocationChanged(Location location) {}
 
-						                        public void onProviderDisabled(String provider) {
-						                        }
+								List<String> providers = locationManager
+										.getProviders(true);
+								for (String provider : providers) {
+									locationManager.requestLocationUpdates(
+											provider, 1000L, 0.0f,
+											new LocationListener() {
+												public void onLocationChanged(
+														Location location) {
+												}
 
-						                        public void onProviderEnabled(String provider) {
-						                        }
+												public void onProviderDisabled(
+														String provider) {
+												}
 
-						                        public void onStatusChanged(String provider,
-						                                int status, Bundle extras) {
-						                        }
-						            });
-						        }
-							
+												public void onProviderEnabled(
+														String provider) {
+												}
 
+												public void onStatusChanged(
+														String provider,
+														int status,
+														Bundle extras) {
+												}
+											});
+								}
 
 								Criteria criteria = new Criteria();
 								String provider = locationManager
@@ -339,20 +344,22 @@ public class WhatAmIdoing extends FragmentActivity implements
 
 								if (location == null) {
 									locationManager
-									.getLastKnownLocation("network");
-									
+											.getLastKnownLocation("network");
+
 								}
-								
+
 								if (location == null) {
 									locationManager
-									.getLastKnownLocation("network");
+											.getLastKnownLocation("network");
 								}
 								if (location != null) {
 									waidLocationListener.sendLocation(location);
 									Log.i("WhatAmIdoing.onClick", "IS NOT NULL");
 								} else {
 									Log.i("WhatAmIdoing.onClick", "IS NULL");
-									 Toast.makeText(getApplicationContext(), "Location Currently Not Available",Toast.LENGTH_SHORT).show();
+									Toast.makeText(getApplicationContext(),
+											"Location Currently Not Available",
+											Toast.LENGTH_SHORT).show();
 								}
 								// locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
 								// 0, 0, waidLocationListener);
@@ -427,6 +434,7 @@ public class WhatAmIdoing extends FragmentActivity implements
 				locationManager.removeUpdates(waidLocationListener);
 				locationManager = null;
 			}
+			stopChatService();
 		}
 
 		// Always call the superclass so it can save the view hierarchy state
@@ -491,6 +499,7 @@ public class WhatAmIdoing extends FragmentActivity implements
 			private IntentFilter filterServiceStoppedReceiver;
 			private IntentFilter filterRegisterReceiver;
 			private IntentFilter filterServiceConnectionCloseReceiver;
+			private IntentFilter filterTotalWatchersReceiver;
 
 			public void run() {
 
@@ -501,6 +510,10 @@ public class WhatAmIdoing extends FragmentActivity implements
 				Intent msgIntent = new Intent(
 						activity,
 						com.watamidoing.transport.service.WebsocketService.class);
+
+				Intent totalWatchersIntent = new Intent(
+						activity,
+						com.watamidoing.total.service.TotalWatchersService.class);
 
 				if (START_SHARING.equalsIgnoreCase(text)) {
 					startTransmission.setEnabled(true);
@@ -513,6 +526,25 @@ public class WhatAmIdoing extends FragmentActivity implements
 					}
 					startService(msgIntent);
 
+					if (isServiceRunning(TotalWatchersService.class.getName())) {
+						StopReceivers stopReceivers = new StopReceivers(
+								activity, false);
+						stopReceivers.run();
+
+					}
+
+					startService(totalWatchersIntent);
+
+					if (totalWatchersReceiver == null) {
+						filterTotalWatchersReceiver = new IntentFilter(
+								TotalWatchersReceiver.TOTAL_WATCHERS_RECEIVER);
+						filterTotalWatchersReceiver
+								.addCategory(Intent.CATEGORY_DEFAULT);
+						totalWatchersReceiver = new TotalWatchersReceiver(
+								activity);
+						registerReceiver(totalWatchersReceiver,
+								filterTotalWatchersReceiver);
+					}
 					if (notAbleToConnectReceiver == null) {
 						filterNotAbleToConnect = new IntentFilter(
 								NotAbleToConnectReceiver.NOT_ABLE_TO_CONNECT);
@@ -578,10 +610,12 @@ public class WhatAmIdoing extends FragmentActivity implements
 					doBindService();
 				} else {
 					stopService(msgIntent);
+					stopService(totalWatchersIntent);
 					// Unregistering receivers
 
 					videoSharing = false;
 
+					doUnbindChatService();
 					doUnbindService();
 					startTransmission.setText(START_SHARING);
 				}
@@ -671,39 +705,17 @@ public class WhatAmIdoing extends FragmentActivity implements
 					if (cameraView != null) {
 						cameraView.sharingHasStarted();
 					}
-					
-					//totalUsersWatchingTask = new TotalUsersWatchingTask(activity);
-					//totalUsersWatchingTask.execute((Void)null);
-					
-					
+
+					// totalUsersWatchingTask = new
+					// TotalUsersWatchingTask(activity);
+					// totalUsersWatchingTask.execute((Void)null);
+
 				}
 			}
 		}));
 
 	}
 
-  public void updateTotalViews(final String watchers) {
-	  
-	  
-	  if (isVideoSharing()) {
-		  runOnUiThread(new Thread(new Runnable() {
-				public void run() {
-
-					
-					if (watchers != null) {
-					final TextView totalWatchers = (TextView) activity
-							.findViewById(R.id.totalWatchers);
-					totalWatchers.setText(watchers);
-					}
-					totalUsersWatchingTask = new TotalUsersWatchingTask(activity);
-					totalUsersWatchingTask.execute((Void)null);
-				}
-		  }));
-	  }
-  }
-		
-	
-  
 	@Override
 	public void onWindowFocusChanged(boolean hasFocus) {
 		super.onWindowFocusChanged(hasFocus);
@@ -723,7 +735,7 @@ public class WhatAmIdoing extends FragmentActivity implements
 		final Button shareLocation = (Button) activity
 				.findViewById(R.id.locationButton);
 		shareLocation.setWidth(width);
-		
+
 		final TextView totalWatchers = (TextView) activity
 				.findViewById(R.id.totalWatchers);
 		totalWatchers.setWidth(width);
@@ -816,8 +828,7 @@ public class WhatAmIdoing extends FragmentActivity implements
 		final TextView totalWatchers = (TextView) activity
 				.findViewById(R.id.totalWatchers);
 		totalWatchers.setText("");
-		
-		
+
 	}
 
 	@Override
@@ -892,7 +903,14 @@ public class WhatAmIdoing extends FragmentActivity implements
 	public void onDestroy() {
 
 		super.onDestroy();
-		stopChatService();
+		runOnUiThread(new Runnable() {
+
+			@Override
+			public void run() {
+				stopChatService();
+
+			}
+		});
 	}
 
 	@Override
@@ -913,6 +931,14 @@ public class WhatAmIdoing extends FragmentActivity implements
 
 		@Override
 		public void run() {
+
+			try {
+				if (totalWatchersReceiver != null) {
+					unregisterReceiver(totalWatchersReceiver);
+				}
+			} catch (IllegalArgumentException e) {
+				totalWatchersReceiver = null;
+			}
 
 			try {
 				if (notAbleToConnectReceiver != null) {
@@ -957,6 +983,11 @@ public class WhatAmIdoing extends FragmentActivity implements
 			Intent msgIntent = new Intent(activity,
 					com.watamidoing.transport.service.WebsocketService.class);
 			stopService(msgIntent);
+
+			Intent totalWatchersIntent = new Intent(activity,
+					com.watamidoing.total.service.TotalWatchersService.class);
+			stopService(totalWatchersIntent);
+
 			if (callOnBackPress) {
 				Authentication auth = DatabaseHandler.getInstance(activity)
 						.getDefaultAuthentication();
@@ -986,6 +1017,15 @@ public class WhatAmIdoing extends FragmentActivity implements
 
 		StopReceivers stopReceivers = new StopReceivers(this, true);
 		runOnUiThread(new Thread(stopReceivers));
+
+		runOnUiThread(new Runnable() {
+
+			@Override
+			public void run() {
+				stopChatService();
+
+			}
+		});
 
 	}
 
@@ -1106,8 +1146,7 @@ public class WhatAmIdoing extends FragmentActivity implements
 		@Override
 		public void onPreviewFrame(byte[] data, Camera camera) {
 
-			Log.d("WhatAmIDoing.CameraView.onPreview", "sharing["
-					+ sharingStarted + "]");
+			//Log.d("WhatAmIDoing.CameraView.onPreview", "sharing["+ sharingStarted + "]");
 			if (sharingStarted) {
 
 				Camera.Parameters parameters = camera.getParameters();
@@ -1140,8 +1179,7 @@ public class WhatAmIdoing extends FragmentActivity implements
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-				Log.d("WhatAmiDoing.CameraView.onPreview", " transmit bytes["
-						+ jdata.length + "]");
+				//Log.d("WhatAmiDoing.CameraView.onPreview", " transmit bytes["+ jdata.length + "]");
 				// baos = null;
 				jdata = null;
 			}
@@ -1202,7 +1240,7 @@ public class WhatAmIdoing extends FragmentActivity implements
 	public boolean onCreateOptionsMenu(Menu menu) {
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.main, menu);
-		
+
 		menu.findItem(R.id.linkedin_menu_item).setIcon(
 				resizeImage(R.drawable.linkedin, 100, 95));
 		menu.findItem(R.id.facebook_menu_item).setIcon(
@@ -1254,7 +1292,7 @@ public class WhatAmIdoing extends FragmentActivity implements
 				DatabaseHandler.getInstance(activity).removeAuthentication(tat);
 
 			}
-			
+
 			LinkedInAuthenticationToken la = DatabaseHandler.getInstance(
 					activity).getDefaultLinkedinAuthentication();
 			if (la != null) {
@@ -1272,7 +1310,7 @@ public class WhatAmIdoing extends FragmentActivity implements
 		}
 
 		if (videoStart && !skip && videoSharing) {
-			
+
 			if (itemId == R.id.linkedin_menu_item) {
 				LinkedInAuthorization ta = new LinkedInAuthorization(activity);
 				Token accessToken = ta.getAccessToken();
@@ -1323,8 +1361,9 @@ public class WhatAmIdoing extends FragmentActivity implements
 			stit.execute((Void) null);
 
 		}
-		
+
 	}
+
 	public void tweetWhatIAmDoing() {
 		TwitterAuthorization ta = new TwitterAuthorization(activity);
 		AccessToken accessToken = ta.getAccessToken();
@@ -1350,14 +1389,14 @@ public class WhatAmIdoing extends FragmentActivity implements
 					true, activity);
 			inviteDialogFragment.show(fm, "facebook_invite_dialog");
 		} else {
-			
+
 			String inviteUrl = activity
 					.getString(R.string.send_invite_facebook_url);
 			Authentication auth = DatabaseHandler.getInstance(activity)
 					.getDefaultAuthentication();
 			String url = inviteUrl + "?token=" + auth.getToken();
-			FacebookPostTask fpt = new FacebookPostTask(url,
-					activity,facebookSession);
+			FacebookPostTask fpt = new FacebookPostTask(url, activity,
+					facebookSession);
 			fpt.execute((Void) null);
 
 		}
@@ -1388,65 +1427,77 @@ public class WhatAmIdoing extends FragmentActivity implements
 	}
 
 	public void displayChat(final View view) {
+
+		// Registering the receiver of chat messages
 		
+		if (isVideoSharing() && isVideoStart()) { 
+		Button displayChatButton = (Button) activity.findViewById(R.id.send_messge);
+		displayChatButton.setEnabled(false);
+		Log.i(TAG,"---display chat button should be disabled");
+		if (chatMessageReceiver != null) {
+			unregisterReceiver(chatMessageReceiver);	
+		}
+			chatMessageReceiverFilter = new IntentFilter(
+					ChatMessageReceiver.MESSAGE_RECIEVED);
+			chatMessageReceiverFilter.addCategory(Intent.CATEGORY_DEFAULT);
+			chatMessageReceiver = new ChatMessageReceiver(this);
+			registerReceiver(chatMessageReceiver, chatMessageReceiverFilter);
+	
+
+		if (chatEnabledReceiver != null) {
+			unregisterReceiver(chatEnabledReceiver);
+		}
+			chatEnabledReceiverFilter = new IntentFilter(
+					ChatEnabledReceiver.CHAT_ENABLED_RECEIVER);
+			chatEnabledReceiverFilter.addCategory(Intent.CATEGORY_DEFAULT);
+			chatEnabledReceiver = new ChatEnabledReceiver(this);
+			registerReceiver(chatEnabledReceiver, chatEnabledReceiverFilter);
 		
-		//Registering the receiver of chat messages
-		chatMessageReceiverFilter = new IntentFilter(
-				ChatMessageReceiver.MESSAGE_RECIEVED);
-		chatMessageReceiverFilter
-				.addCategory(Intent.CATEGORY_DEFAULT);
-		chatMessageReceiver = new ChatMessageReceiver(this);
-		registerReceiver(chatMessageReceiver,
-				chatMessageReceiverFilter);
-		
-		chatEnabledReceiverFilter = new IntentFilter(
-				ChatEnabledReceiver.CHAT_ENABLED_RECEIVER);
-		chatEnabledReceiverFilter
-				.addCategory(Intent.CATEGORY_DEFAULT);
-		chatEnabledReceiver = new ChatEnabledReceiver(this);
-		registerReceiver(chatEnabledReceiver,
-				chatEnabledReceiverFilter);
-		
-		
-		chatParticipantReceiverFilter = new IntentFilter(
-				ChatParticipantReceiver.CHAT_PARTICIPANT_RECEIVER);
-		chatParticipantReceiverFilter
-				.addCategory(Intent.CATEGORY_DEFAULT);
-		chatParticipantReceiver = new ChatParticipantReceiver(this);
-		registerReceiver(chatParticipantReceiver,
-				chatParticipantReceiverFilter);
-		
-		Intent msgIntent = new Intent(
-				this,
-				com.watamidoing.xmpp.service.XMPPService.class);
-	  if (WhatAmIdoing.isServiceRunning(XMPPService.class.getName())) {
-		  Log.i(TAG,"--------STOPPIN SERVICE");
-		  this.stopService(msgIntent);
-	  }
-		Log.i(TAG,"--------STARTING SERVICE");
-		this.startService(msgIntent);
+
+		if (chatParticipantReceiver != null) {
+			unregisterReceiver(chatParticipantReceiver);
+		}
+			chatParticipantReceiverFilter = new IntentFilter(
+					ChatParticipantReceiver.CHAT_PARTICIPANT_RECEIVER);
+			chatParticipantReceiverFilter.addCategory(Intent.CATEGORY_DEFAULT);
+			chatParticipantReceiver = new ChatParticipantReceiver(this);
+			registerReceiver(chatParticipantReceiver,
+					chatParticipantReceiverFilter);
 
 		
+
+		Intent msgIntent = new Intent(this,
+				com.watamidoing.chat.xmpp.service.XMPPService.class);
+		if (WhatAmIdoing.isServiceRunning(XMPPService.class.getName())) {
+			Log.i(TAG, "--------STOPPIN SERVICE");
+			doUnbindChatService();
+			this.stopService(msgIntent);
+		}
+		Log.i(TAG, "--------STARTING SERVICE");
+		this.startService(msgIntent);
+		} else {
+			UtilsWhatAmIdoing.displayGenericToast(this, this.getString(R.string.video_not_started_view_sharers));
+		}
+
 	}
-	
+
 	public void doBindChatService() {
 		// Establish a connection with the service. We use an explicit
 		// class name because there is no reason to be able to let other
 		// applications replace our component.
-		getApplicationContext()
-				.bindService(
-						new Intent(
-								getApplicationContext(),
-								com.watamidoing.xmpp.service.XMPPService.class),
-						xmppServiceConnection, Context.BIND_AUTO_CREATE);
+		getApplicationContext().bindService(
+				new Intent(getApplicationContext(),
+						com.watamidoing.chat.xmpp.service.XMPPService.class),
+				xmppServiceConnection, Context.BIND_AUTO_CREATE);
 		chatServiceIsBound = true;
-	
+
+		
 		Log.d("WhatAmidoingCamera.doBindService", "binding to service");
 
 	}
-	
+
 	public void doUnbindChatService() {
-		
+
 		if (chatServiceIsBound) {
 			// If we have received the service, and hence registered with
 			// it, then now is the time to unregister.
@@ -1459,38 +1510,39 @@ public class WhatAmIdoing extends FragmentActivity implements
 		}
 	}
 
-
 	@Override
 	public void xmppConnection(boolean results, Messenger messenger) {
-		
-		
-		
+
 		if (results) {
 			FragmentManager fm = getSupportFragmentManager();
-			chatDialogFragment = ChatDialogFragment.newInstance(
-					true, activity,messenger);
+			chatDialogFragment = ChatDialogFragment.newInstance(true, activity,
+					messenger);
 			chatDialogFragment.show(fm, "chat_dialog_fragment");
-			
+
 			String oldMessage = chatMessageQueue.poll();
-			while(oldMessage != null) {
+			while (oldMessage != null) {
 				chatDialogFragment.addMessage(oldMessage);
 				oldMessage = chatMessageQueue.poll();
 			}
-			
+
 			oldMessage = chatParticipantQueue.poll();
-			while(oldMessage != null) {
+			while (oldMessage != null) {
 				chatDialogFragment.addParticipant(oldMessage);
 				oldMessage = chatParticipantQueue.poll();
 			}
-			
+
+		}else {
 			
 		}
-		
+
 	}
 
 	@Override
 	public void messageReceived(String chatMessage) {
-		
+
+		Log.i(TAG, "--------------NEW MESSAGE RECEIVED SIZE OF LIST:"
+				+ chatMessageQueue.size());
+		Log.i(TAG, "--------------NEW MESSAGE RECEIVED:" + chatMessage);
 		if (chatDialogFragment == null) {
 			chatMessageQueue.add(chatMessage);
 		} else {
@@ -1500,12 +1552,12 @@ public class WhatAmIdoing extends FragmentActivity implements
 
 	@Override
 	public void enableChat(boolean enable) {
-		
+
 		if (enable) {
 			doBindChatService();
 		}
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
@@ -1515,14 +1567,16 @@ public class WhatAmIdoing extends FragmentActivity implements
 		} else {
 			chatDialogFragment.addParticipant(participant);
 		}
-		
-	}
-	
-	public void stopChatService() {
-		
-		
 
-		//Registering the receiver of chat messages
+	}
+
+	public void stopChatService() {
+
+		Button displayChatButton = (Button) activity.findViewById(R.id.send_messge);
+		displayChatButton.setEnabled(true);
+		chatParticipantQueue = new LinkedList<String>();
+		chatMessageQueue = new LinkedList<String>();
+		// Registering the receiver of chat messages
 		try {
 			if (chatMessageReceiver == null) {
 				unregisterReceiver(chatMessageReceiver);
@@ -1530,7 +1584,7 @@ public class WhatAmIdoing extends FragmentActivity implements
 		} catch (IllegalArgumentException e) {
 			chatMessageReceiver = null;
 		}
-		
+
 		try {
 			if (chatEnabledReceiver == null) {
 				unregisterReceiver(chatEnabledReceiver);
@@ -1538,7 +1592,7 @@ public class WhatAmIdoing extends FragmentActivity implements
 		} catch (IllegalArgumentException e) {
 			chatEnabledReceiver = null;
 		}
-		
+
 		try {
 			if (chatParticipantReceiver == null) {
 				unregisterReceiver(chatParticipantReceiver);
@@ -1547,9 +1601,32 @@ public class WhatAmIdoing extends FragmentActivity implements
 			chatParticipantReceiver = null;
 		}
 		doUnbindChatService();
-		Intent msgIntent = new Intent(activity,
-				com.watamidoing.xmpp.service.XMPPService.class);
-		stopService(msgIntent);
-		
+
+		if (isServiceRunning(XMPPService.class.getName())) {
+			Intent msgIntent = new Intent(activity,
+					com.watamidoing.chat.xmpp.service.XMPPService.class);
+			stopService(msgIntent);
+		}
+
+	}
+
+	@Override
+	public void xmppServiceStopped(boolean status) {
+		if (status) {
+			stopChatService();
+		}
+
+	}
+
+	@Override
+	public void updateTotalWatchers(final String totalWatchers) {
+		runOnUiThread(new Thread(new Runnable() {
+			public void run() {
+				final TextView tw = (TextView) activity
+						.findViewById(R.id.totalWatchers);
+				tw.setText(totalWatchers);
+			}
+		}));
+
 	}
 }

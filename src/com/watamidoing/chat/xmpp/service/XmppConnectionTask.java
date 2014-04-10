@@ -1,4 +1,4 @@
-package com.watamidoing.xmpp.service;
+package com.watamidoing.chat.xmpp.service;
 
 import java.io.IOException;
 
@@ -11,9 +11,9 @@ import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 
 import android.os.AsyncTask;
-import android.os.StrictMode;
 import android.util.Log;
 
+import com.waid.R;
 import com.watamidoing.utils.ConnectionResult;
 import com.watamidoing.view.WhatAmIdoing;
 
@@ -25,16 +25,19 @@ public class XmppConnectionTask extends AsyncTask<Void, Void, Boolean> {
 	private ConnectionResult results;
 	private XmppConnectionNotifiction connectionNotification;
 	private XMPPConnection connection;
+	private XMPPService xmppService;
 
 	public XmppConnectionTask() {
 
 	}
 
-	public XmppConnectionTask(String url, XmppConnectionNotifiction connectionNotification) {
-		this.url = url;
+	public XmppConnectionTask(XMPPService xmppService, XmppConnectionNotifiction connectionNotification) {
+		this.xmppService = xmppService;
+		this.connectionNotification = connectionNotification;
 	}
 
-	public XmppConnectionTask(XmppConnectionNotifiction connectionNotification) {
+	public XmppConnectionTask(XmppConnectionNotifiction connectionNotification, XMPPService xmppService) {
+		this.xmppService = xmppService;
 		this.connectionNotification = connectionNotification;
 	}
 
@@ -42,11 +45,13 @@ public class XmppConnectionTask extends AsyncTask<Void, Void, Boolean> {
 	protected Boolean doInBackground(Void... arg0) {
 		int maxLimit = 3;
 		int count =0;
-		 Log.i(TAG,"TRYIG TO MAKE CONNECTION TO XMPP");
-		 ConnectionConfiguration config = new ConnectionConfiguration("192.168.1.2",5222,"my");
-		 SmackConfiguration.setDefaultPacketReplyTimeout(1000);
-		  
-		 Log.i(TAG,"CONFIG STRING:"+config.toString());
+		 String xmppIp = xmppService.getString(R.string.xmpp_ip);
+		 String xmppPort = xmppService.getString(R.string.xmpp_port);
+		 String xmppDomain = xmppService.getString(R.string.xmpp_domain);
+		 String xmppDefaultTimeout = xmppService.getString(R.string.xmpp_default_timeout);
+		 ConnectionConfiguration config = new ConnectionConfiguration(xmppIp,Integer.valueOf(xmppPort),xmppDomain);
+		 SmackConfiguration.setDefaultPacketReplyTimeout(Integer.valueOf(xmppDefaultTimeout));
+		
 		 config.setDebuggerEnabled(true);
 		 SASLAuthentication.supportSASLMechanism("PLAIN", 0);
 		 config.setSecurityMode(ConnectionConfiguration.SecurityMode.disabled);
@@ -60,17 +65,12 @@ public class XmppConnectionTask extends AsyncTask<Void, Void, Boolean> {
 				 	count = maxLimit;
 				 	return true;
 			} catch (SmackException e) {
-				// TODO Auto-generated catch block
 				Log.i(TAG,"FAILED TRYING AGAING:"+count+"] reason for failure["+e.getMessage());
 				count = count + 1;
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 				Log.i(TAG,"FAILED TRYING AGAING:"+count+"] reason for failure["+e.getMessage());
 				count = count + 1;
 			} catch (XMPPException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 				Log.i(TAG,"FAILED TRYING AGAING:"+count+"] reason for failure["+e.getMessage());
 				count = count + 1;
 			}
@@ -83,11 +83,9 @@ public class XmppConnectionTask extends AsyncTask<Void, Void, Boolean> {
 
 		if (success) {
 			connectionNotification.connected(true,connection);
-			Log.i(TAG, "--XMPP CONNECTION MADE");
 		} else {
 			connectionNotification.connected(false,null);
-			Log.i(TAG, "-XMPP CONNECTION FAILURE:");
-
+		
 		}
 	}
 

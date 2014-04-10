@@ -1,4 +1,4 @@
-package com.watamidoing.tasks.callbacks;
+package com.watamidoing.reeiver.callbacks;
 
 import java.io.Serializable;
 

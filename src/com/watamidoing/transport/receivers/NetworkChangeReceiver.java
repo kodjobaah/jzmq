@@ -1,6 +1,6 @@
 package com.watamidoing.transport.receivers;
 
-import com.watamidoing.tasks.callbacks.WebsocketController;
+import com.watamidoing.reeiver.callbacks.WebsocketController;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;

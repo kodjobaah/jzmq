@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.waid"
-    android:versionCode="23"
-    android:versionName="2.2.8" >
+    android:versionCode="24"
+    android:versionName="2.2.9" >
 
    <supports-screens
         android:anyDensity="true"
@@ -103,7 +103,13 @@
         </activity>
         
 
-        <service android:name="com.watamidoing.xmpp.service.XMPPService"
+         TotalWatchersService
+         
+         
+        <service android:name="com.watamidoing.total.service.TotalWatchersService"
+            android:process=":totalwatchersservice"/>
+        
+        <service android:name="com.watamidoing.chat.xmpp.service.XMPPService"
             android:process=":xmppservice"/>
                                       
          <service android:name="com.watamidoing.transport.service.WebsocketService"

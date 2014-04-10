@@ -19,10 +19,15 @@
     <string name="group_jid_url">http://www.whatamidoing.info:9000/getGroupJid</string>
     <string name="invite_location_url">http://www.whatamidoing.info/whatamidoing?invitedId</string>
     <string name="total_watching_url">http://www.whatamidoing.info:9000/usersWatching?token</string>
-    <string name="xmpp_host">my.xe</string>
-    <string name="xmpp_domain">my</string>
+    <string name="xmpp_host">whatamidoing.info</string>
+    <string name="xmpp_domain">whatamidoing</string>
+    <string name="xmpp_ip">5.79.24.141</string>
     <string name="xmpp_port">5222</string>
+    <string name="unable_to_connect_to_chat">Unable to start chat service</string>
+    <string name="xmpp_default_timeout">1000</string>
     <string name="xmmp_roomjid_url">http://www.whatamidoing.info:9000/getRoomJid?token</string>
+    <string name="chat_message_header">Discussion</string>
+    <string name="chat_participant_header">Participants</string>
     <string name="forgotten_password_sign_in_register">Send Me a New Password</string>
     <string name="select_camera">Select Camera</string>
     <string name="start_video">Start Camera</string>
@@ -37,7 +42,7 @@
     <string name="invite_progress_fetch_invites">Fetching Previous Invites&#8230;</string>
     <string name="invite_dialog_message">Enter an email below or Select from previous</string>
     <string name="invite_button">Click To Invite</string>
-    <string name="send_message_button">Send Message</string>
+    <string name="send_message_button">Chat</string>
     <string name="cancel">Cancel</string>
     <string name="invite_previous_message">Select All Previous</string>
     <string name="server_connection_problems">Problems connecting to server. Try again later</string>
@@ -96,7 +101,8 @@
     <string name="logout_menu_names">Logout</string>
     <string name="linkedin_share_comment">WAID (What Am I Doing) Used to share live streams</string>
     <string name="linkedin_share_title">Click On The Link Below to view what I am doing</string>
-     <string name="total_views_message">Views</string>
+    <string name="total_views_message">Viewers</string>
+     
     <!-- - FACEBOOK specific -->
     <string name="get_started">To get started, log in using Facebook</string>
     <string name="app_id">735949386449847</string>
