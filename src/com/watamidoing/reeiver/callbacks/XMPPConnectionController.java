@@ -2,6 +2,8 @@ package com.watamidoing.reeiver.callbacks;
 
 import java.io.Serializable;
 
+import com.watamidoing.chat.xmpp.service.Participant;
+
 import android.os.Messenger;
 
 public interface XMPPConnectionController extends Serializable {
@@ -31,7 +33,7 @@ public interface XMPPConnectionController extends Serializable {
 	/*
 	 * This is invoked in [[com.watamidoing.xmpp.receivers.ChatParticipantReceiver]]
 	 */
-	public void newParticipant(String participant);
+	public void newParticipant(Participant participant);
 
 	/*
 	 * This is invoked in [[com.watamidoing.xmpp.receivers.XMPPServiceStoppedReceiver]]

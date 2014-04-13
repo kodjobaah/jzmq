@@ -15,23 +15,23 @@ public class ScreenDimension {
 	}
 
 	public int getWidthPixels() {
-		Log.d("ScreenDimension","getWidthPixels=["+widthPixels+"]");
+		Log.i("ScreenDimension","getWidthPixels=["+widthPixels+"]");
 		return widthPixels;
 	}
 
 	public int getHeightPixels() {
-		Log.d("ScreenDimension","getHeightPixels=["+heightPixels+"]");
+		Log.i("ScreenDimension","getHeightPixels=["+heightPixels+"]");
 		return heightPixels;
 	}
 	
 	public int getDpWidthPixels() {
 		
-		Log.d("ScreenDimension","getDpWidthPixels=["+Float.valueOf(widthPixels/density).intValue()+"]");
+		Log.i("ScreenDimension","getDpWidthPixels=["+Float.valueOf(widthPixels/density).intValue()+"]");
 		return Float.valueOf(widthPixels/density).intValue();
 	}
 	
 	public int getDpHeightPixels() {
-		Log.d("ScreenDimension","getDpHeightPixels=["+Float.valueOf(heightPixels/density).intValue()+"]");
+		Log.i("ScreenDimension","getDpHeightPixels=["+Float.valueOf(heightPixels/density).intValue()+"]");
 		return Float.valueOf(heightPixels/density).intValue();
 	}
 

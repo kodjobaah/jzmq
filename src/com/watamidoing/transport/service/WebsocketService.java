@@ -1,5 +1,6 @@
 package com.watamidoing.transport.service;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 import android.app.Notification;
@@ -17,6 +18,7 @@ import android.util.Base64;
 import android.util.Log;
 
 import com.waid.R;
+import com.watamidoing.camera.ArithmeticCodeCompression;
 import com.watamidoing.contentproviders.Authentication;
 import com.watamidoing.contentproviders.DatabaseHandler;
 import com.watamidoing.transport.receivers.NotAbleToConnectReceiver;
@@ -88,10 +90,31 @@ public class WebsocketService  extends Service {
                 	
                 	if (mConnection != null) {
                 		byte[] frame = msg.getData().getByteArray("frame");
+                		Log.i(TAG,"------------------RECEIVED SHOUDL BE BEFORE COMPRESS TRANSMITTING----:"+frame.length);
+                		String res = Base64.encodeToString(frame, Base64.DEFAULT);
                 		
+                		/*
+                		ArithmeticCodeCompression acc = new ArithmeticCodeCompression();
+                		
+                		byte[] compressed = frame;
+						try {
+							compressed = acc.compress(res.getBytes());
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+							
+						}
+				
+						*/
                 		if  (frame != null) {
-                			String res = Base64.encodeToString(frame, Base64.DEFAULT);
-                			if (res != null) {
+                	
+                			/*
+                			Log.i(TAG,"------------------RECEIVED SHOUDL BE AFTER COMPRESS TRANSMITTING----:"+compressed.length);
+                	
+                			String newRes = Base64.encodeToString(compressed, Base64.DEFAULT);
+                			*/
+                			if ((res != null) && (mConnection !=  null)) {
+                				//mConnection.sendTextMessage(newRes);
                 				mConnection.sendTextMessage(res);
                 			}
                 		}
@@ -174,7 +197,7 @@ public class WebsocketService  extends Service {
      
              @Override
              public void onOpen() {
-                Log.d(TAG, "Status: Connected to " + wsuri);
+                Log.i(TAG, "Status: Connected to " + wsuri);
                // mConnection.sendTextMessage("Hello, world!");
              }
      
@@ -182,13 +205,13 @@ public class WebsocketService  extends Service {
              public void onTextMessage(String payload) {
              
                 sendServiceStartedNotification();
-                Log.d(TAG, "Got echo: " + payload);
+                Log.i(TAG, "Got echo: " + payload);
              }
      
              @Override
              public void onClose(int code, String reason) {
             	 sendServiceConnectionCloseNotification();
-                Log.d(TAG, "Connection lost.");
+                Log.i(TAG, "Connection lost.");
                 stopSelf();
              }
 
@@ -207,7 +230,7 @@ public class WebsocketService  extends Service {
        } catch (WebSocketException e) {
     	   sendNotAbleToConnectNotification();
     	   stopSelf();
-          Log.d(TAG, e.toString());
+          Log.i(TAG, e.toString());
        }
     }
     

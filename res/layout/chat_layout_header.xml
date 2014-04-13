@@ -7,7 +7,7 @@
 
  <TextView android:id="@+id/chatHeader"
      style="@+style/ChatHeader"/>
-       <TextView
+  <TextView
         android:id="@+id/chatRow"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"

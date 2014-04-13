@@ -71,7 +71,7 @@ public class InviteListTask extends AsyncTask<Void, Void, Boolean> {
 		Button cancel = (Button) dialog.findViewById(R.id.cancel_invite);
 		cancel.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
-				Log.d("InviteListTask.InviteListTask","Cancel Button was clicked");
+				Log.i("InviteListTask.InviteListTask","Cancel Button was clicked");
 				dialog.cancel();
 			}
 		});
@@ -83,7 +83,7 @@ public class InviteListTask extends AsyncTask<Void, Void, Boolean> {
 			public void onClick(View v) {
 				EditText emailEditText = (EditText)dialog.findViewById(R.id.invite_email);
 				String email =emailEditText.getText().toString().trim();
-				Log.d("InviteListTask.constructor","email=["+email+"]");
+				Log.i("InviteListTask.constructor","email=["+email+"]");
 				Pattern pattern = Patterns.EMAIL_ADDRESS;
 
 				List<String> previousSelected = new ArrayList<String>();
@@ -110,7 +110,7 @@ public class InviteListTask extends AsyncTask<Void, Void, Boolean> {
 					}
 
 					String url = inviteUrl+"?token="+auth.getToken()+"&email="+selected;
-					Log.d("InviteListTask.constructory","url="+url+"");
+					Log.i("InviteListTask.constructory","url="+url+"");
 					SendInviteEmailTask sendInviteEmailTask = new SendInviteEmailTask(url,context);
 					sendInviteEmailTask.execute((Void) null);
 					dialog.cancel();
@@ -126,7 +126,7 @@ public class InviteListTask extends AsyncTask<Void, Void, Boolean> {
 			@Override
 			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 
-				Log.d("InviteListTask.InviteListTask","Select all previous");
+				Log.i("InviteListTask.InviteListTask","Select all previous");
 				if (expListAdapter != null) {
 					if (isChecked) {
 						expListAdapter.sellectAllPrevious();
@@ -206,10 +206,10 @@ public class InviteListTask extends AsyncTask<Void, Void, Boolean> {
 			invitelist.setIndicatorBounds(0, 20);
 			invitelist.setAdapter(expListAdapter);
 			showProgress(false);
-			Log.d("invitelist.onpostexecute","succes:"+inviteList);
+			Log.i("invitelist.onpostexecute","succes:"+inviteList);
 		} else {
 			showProgress(false);
-			Log.d("invitelist.onpostexecute","failute:");
+			Log.i("invitelist.onpostexecute","failute:");
 		}
 	}
 

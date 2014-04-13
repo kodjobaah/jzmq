@@ -18,7 +18,7 @@ public class ServiceStoppedReceiver extends BroadcastReceiver {
 	
 	@Override
 	public void onReceive(Context context, Intent intent) {
-		Log.d("ServiceStoppedReceiver.onReceive","receved message");
+		Log.i("ServiceStoppedReceiver.onReceive","receved message");
 		websocketController.websocketServiceStop(true);
 		
 	}

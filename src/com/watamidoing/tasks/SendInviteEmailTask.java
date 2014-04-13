@@ -43,10 +43,10 @@ public class SendInviteEmailTask extends AsyncTask<Void, Void, Boolean> {
         
 		if (success) {
 			UtilsWhatAmIdoing.displaySuccessInvitesDialog(context);
-		    Log.d("sendinviteemailtask.onpostexecute","succes:");
+		    Log.i("sendinviteemailtask.onpostexecute","succes:");
 		} else {
 			UtilsWhatAmIdoing.displayNetworkProblemsForInvitesDialog(context);
-		    Log.d("sendinviteemailtask.onpostexecute","failure:");
+		    Log.i("sendinviteemailtask.onpostexecute","failure:");
 			
 		}
 	}

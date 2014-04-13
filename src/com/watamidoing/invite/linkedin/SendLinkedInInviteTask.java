@@ -49,6 +49,8 @@ public class SendLinkedInInviteTask extends AsyncTask<Void, Void, Boolean> {
 			return false;
 		} else if (results.getStatusCode() != HttpURLConnection.HTTP_OK) {
 			return false;
+		} else if (results.getResult().contains("Unable")){
+			return false;
 		}
 
 		return true;

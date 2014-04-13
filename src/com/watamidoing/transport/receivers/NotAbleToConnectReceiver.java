@@ -18,7 +18,7 @@ public class NotAbleToConnectReceiver extends BroadcastReceiver {
 	}
 	@Override
 	public void onReceive(Context arg0, Intent arg1) {
-		Log.d("NotAbleToConnectReceiver.onReceive","receved message");
+		Log.i("NotAbleToConnectReceiver.onReceive","receved message");
 		websocketController.websocketProblems(true);
 	}
 

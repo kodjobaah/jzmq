@@ -33,7 +33,7 @@ public class NetworkChangeReceiver extends BroadcastReceiver {
         	websocketController.networkStatusChange(true);
             // Do something
 
-            Log.d("Netowk Available ", "Flag No 1");
+            Log.i("Netowk Available ", "Flag No 1");
         } else {
         	websocketController.networkStatusChange(false);
         }

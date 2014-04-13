@@ -63,10 +63,10 @@ public class GetGroupIdTask extends AsyncTask<Void, Void, Boolean> {
 				UtilsWhatAmIdoing.displayGenericMessageDialog(context, message);
 			}
 
-			Log.d(TAG, "succes:");
+			Log.i(TAG, "succes:");
 		} else {
 			UtilsWhatAmIdoing.displayNetworkProblemsForInvitesDialog(context);
-			Log.d(TAG, "failure:");
+			Log.i(TAG, "failure:");
 
 		}
 	}

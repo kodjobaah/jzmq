@@ -18,7 +18,7 @@ public class ServiceConnectionCloseReceiver extends BroadcastReceiver {
 	
 	@Override
 	public void onReceive(Context context, Intent intent) {
-		Log.d("ServiceConnectionCloseReceiver.onReceive","receved message");
+		Log.i("ServiceConnectionCloseReceiver.onReceive","receved message");
 		websocketController.websocketServiceConnectionClose(true);
 		
 	}

@@ -41,7 +41,7 @@ public class HttpConnectionHelper {
 				result += line;
 			}
 			int statusCode = urlConnection.getResponseCode();
-			Log.d("HttpConnectionHelper.connect","status code["+statusCode+"]");
+			Log.i("HttpConnectionHelper.connect","status code["+statusCode+"]");
 			connectionResult = new ConnectionResult(result, statusCode);
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -70,7 +70,7 @@ public class HttpConnectionHelper {
 				result += line;
 			}
 			int statusCode = urlConnection.getResponseCode();
-			Log.d("HttpConnectionHelper.connect","status code["+statusCode+"]");
+			Log.i("HttpConnectionHelper.connect","status code["+statusCode+"]");
 			connectionResult = new ConnectionResult(result, statusCode);
 		} catch (IOException e) {
 			e.printStackTrace();

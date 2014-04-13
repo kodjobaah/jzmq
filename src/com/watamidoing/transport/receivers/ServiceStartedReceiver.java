@@ -18,7 +18,7 @@ public class ServiceStartedReceiver extends BroadcastReceiver {
 
 	@Override
 	public void onReceive(Context context, Intent intent) {
-		Log.d("ServiceStartedReceiver.onReceive","receved message");
+		Log.i("ServiceStartedReceiver.onReceive","receved message");
 		websocketController.websocketConnectionCompleted(true);
 	}
 

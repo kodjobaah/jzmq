@@ -1,18 +1,28 @@
 package com.watamidoing.chat.xmpp.service;
 
 import java.net.HttpURLConnection;
+import java.util.Iterator;
 
 import org.jivesoftware.smack.PacketListener;
+import org.jivesoftware.smack.Roster;
+import org.jivesoftware.smack.RosterEntry;
+import org.jivesoftware.smack.RosterGroup;
 import org.jivesoftware.smack.SmackAndroid;
 import org.jivesoftware.smack.SmackConfiguration;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.SmackException.NotConnectedException;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
+import org.jivesoftware.smack.filter.PacketTypeFilter;
 import org.jivesoftware.smack.packet.Packet;
+import org.jivesoftware.smack.packet.Presence;
+import org.jivesoftware.smack.packet.Presence.Type;
+import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smackx.muc.DiscussionHistory;
 import org.jivesoftware.smackx.muc.MultiUserChat;
+import org.jivesoftware.smackx.muc.Occupant;
 import org.jivesoftware.smackx.muc.packet.MUCUser;
+import org.jivesoftware.smackx.muc.Affiliate; 
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -31,6 +41,7 @@ import android.util.Log;
 import com.waid.R;
 import com.watamidoing.chat.xmpp.receivers.ChatEnabledReceiver;
 import com.watamidoing.chat.xmpp.receivers.ChatMessageReceiver;
+import com.watamidoing.chat.xmpp.receivers.ChatParticipantReceiver;
 import com.watamidoing.chat.xmpp.receivers.XMPPServiceStoppedReceiver;
 import com.watamidoing.contentproviders.Authentication;
 import com.watamidoing.contentproviders.DatabaseHandler;
@@ -88,6 +99,12 @@ public class XMPPService extends Service implements PacketListener, XmppConnecti
 
 	private ParticipantPacketListener participantPacketListener;
 
+	private ParseRoomJid parserRoomJid;
+
+	private AffiliateListener affiliateInterceptor;
+
+	private AffiliateListener affiliateListener;
+
 	private static MultiUserChat multiUserChat;
 	
 
@@ -100,7 +117,7 @@ public class XMPPService extends Service implements PacketListener, XmppConnecti
 
 	@Override
     public void onDestroy() {
-		smackAndroid.onDestroy();
+
 		try {
 			if (multiUserChat != null) {
 				multiUserChat.leave();
@@ -113,7 +130,9 @@ public class XMPPService extends Service implements PacketListener, XmppConnecti
 		} catch (NotConnectedException e) {
 			e.printStackTrace();
 		}
+		Log.i(TAG,"onDestroy -- should be sending service stopped message");
 		sendServiceStoppedMessage();
+		smackAndroid.onDestroy();	
 		
     }
 	
@@ -206,14 +225,14 @@ public class XMPPService extends Service implements PacketListener, XmppConnecti
 			    HttpConnectionHelper httpConnectionHelper = new HttpConnectionHelper();
 				ConnectionResult results = httpConnectionHelper.connect(url);
 				if (results == null) {
-					Log.d(TAG,"problems logging on");
+					Log.i(TAG,"problems logging on");
 					stopSelf();
 				} else if (results.getStatusCode() != HttpURLConnection.HTTP_OK) {
-					Log.d(TAG,"problems logging on");
+					Log.i(TAG,"problems logging on");
 					stopSelf();
 				} else {
 					 String res = results.getResult();
-					 ParseRoomJid parserRoomJid = new ParseRoomJid(res);
+					 parserRoomJid = new ParseRoomJid(res);
 					 String roomJid = parserRoomJid.getRoomJid();
 					 String nickname = parserRoomJid.getNickName();
 					 Log.i(TAG,"ROOMJID="+roomJid);
@@ -225,11 +244,29 @@ public class XMPPService extends Service implements PacketListener, XmppConnecti
 					    history.setMaxStanzas(5);
 						multiUserChat.join(nickname,"holder",history,SmackConfiguration.getDefaultPacketReplyTimeout());
 						multiUserChat.addMessageListener(this);
-						participantPacketListener = new ParticipantPacketListener(this);
-						multiUserChat.addParticipantListener(participantPacketListener);
+						multiUserChat.pollMessage();
+						affiliateListener = new AffiliateListener(this);
+						AffiliatePacketFilter apf = new AffiliatePacketFilter();
+						connection.addPacketListener(affiliateListener, apf);
+						
+						Iterator<String> occupants = multiUserChat.getOccupants();
+						while(occupants.hasNext()) {
+							
+							String nick = StringUtils.parseResource(occupants.next());
+							Participant participant = new Participant(Type.available.toString(), nick);
+							Intent broadcastIntent = new Intent();
+							broadcastIntent.putExtra(XMPPConnectionController.CHAT_PARTICIPANT,
+									participant);
+							broadcastIntent
+									.setAction(ChatParticipantReceiver.CHAT_PARTICIPANT_RECEIVER);
+							broadcastIntent.addCategory(Intent.CATEGORY_DEFAULT);
+							this.sendBroadcast(broadcastIntent);
+						}
+						//participantPacketListener = new ParticipantPacketListener(this);
+						//multiUserChat.addParticipantListener(participantPacketListener);
 						mMessenger= new Messenger(new IncomingHandler(multiUserChat,this));
 						sendChatEnableMessage();
-					
+											
 					} else {
 						connection.disconnect();
 						stopSelf();
@@ -256,11 +293,15 @@ public class XMPPService extends Service implements PacketListener, XmppConnecti
 			this.connection = connection;
 			startChat();
 		} else {
-			try {
-				multiUserChat.leave();
-			} catch (NotConnectedException e) {
-				e.printStackTrace();
+			
+			if  (multiUserChat != null) {
+				try {
+					multiUserChat.leave();
+				} catch (NotConnectedException e) {
+					e.printStackTrace();
+				}
 			}
+			Log.i(TAG,"unable to connect should be stopping the service");
 			stopSelf();
 		}
 		
@@ -290,10 +331,18 @@ public class XMPPService extends Service implements PacketListener, XmppConnecti
 	
 			Intent broadcastIntent = new Intent();			
 			String from = mess.getFrom().substring(mess.getFrom().indexOf("/")+1,mess.getFrom().length());
-			Integer n = from.lastIndexOf("-DIDLY-SQUAT-");
-			if (n > 0) {
-			    from = from.substring(n+13,from.length());
+			
+			String xmppParticipantDelimeter = this.getString(R.string.xmpp_participant_nick_delimeter);
+			
+			if (from.equalsIgnoreCase(parserRoomJid.getNickName())) {
+				from = "me";
+			} else {
+				Integer n = from.lastIndexOf(xmppParticipantDelimeter);
+				if (n > 0) {
+					from = from.substring(n+13,from.length());
+				}
 			}
+			
 			String m = "<bold><font color=\"blue\">"+from+"</font></bold>:"+mess.getBody();
 			broadcastIntent.putExtra(XMPPConnectionController.CHAT_MESSAGE, m);
 		    	broadcastIntent.setAction(ChatMessageReceiver.MESSAGE_RECIEVED);

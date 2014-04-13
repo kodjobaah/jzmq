@@ -50,6 +50,8 @@ public class FacebookPostTask extends AsyncTask<Void, Void, Boolean> {
 			return false;
 		} else if (results.getStatusCode() != HttpURLConnection.HTTP_OK) {
 			return false;
+		} else if (results.getResult().contains("Unable")){
+			return false;
 		}
 
 		return true;
@@ -116,7 +118,7 @@ public class FacebookPostTask extends AsyncTask<Void, Void, Boolean> {
 			}
 		} else {
 			UtilsWhatAmIdoing.displayNetworkProblemsForInvitesDialog(context);
-			Log.d(TAG + ".onpostexecute", "failure:");
+			Log.i(TAG + ".onpostexecute", "failure:");
 
 		}
 	}

@@ -43,10 +43,10 @@ public class SendLocationInformationTask extends AsyncTask<Void, Void, Boolean> 
         
 		if (success) {
 			UtilsWhatAmIdoing.displaySuccessLocationInformationSent(context);
-		    Log.d("sendinviteemailtask.onpostexecute","succes:");
+		    Log.i("sendinviteemailtask.onpostexecute","succes:");
 		} else {
 			UtilsWhatAmIdoing.displayNetworkProblemsForLocationDialog(context);
-		    Log.d("sendinviteemailtask.onpostexecute","failure:");
+		    Log.i("sendinviteemailtask.onpostexecute","failure:");
 			
 		}
 	}

@@ -9,13 +9,15 @@
     
       <LinearLayout 
         android:baselineAligned="false" 
+        android:layout_weight="1"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="0dip"
         android:divider="@drawable/divider"
         android:orientation="horizontal" >
 
         <ListView
                 android:id="@+id/chatWindow"
+                android:scrollbars="vertical"
         			android:layout_width="0dp"
         			android:layout_height="match_parent"
         			android:layout_margin="2dp"
@@ -23,6 +25,7 @@
    
             <ListView
                 android:id="@+id/chatParticipants"
+                android:scrollbars="vertical"
         			android:layout_width="0dp"
         			android:layout_height="match_parent"
         			android:layout_margin="2dp"

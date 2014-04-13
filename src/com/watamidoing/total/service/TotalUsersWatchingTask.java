@@ -23,6 +23,7 @@ public class TotalUsersWatchingTask extends AsyncTask<Void, Void, Boolean> {
 	private String totalWatchingUrl;
 	private String token;
 	private String watchers;
+	private boolean problems = false;
 
 	public TotalUsersWatchingTask(TotalWatchersService context) {
 
@@ -30,12 +31,20 @@ public class TotalUsersWatchingTask extends AsyncTask<Void, Void, Boolean> {
 		totalWatchingUrl = context.getString(R.string.total_watching_url);
 		Authentication auth = DatabaseHandler.getInstance(context)
 				.getDefaultAuthentication();
-		token = auth.getToken();
+		if (auth != null) { 
+			token = auth.getToken();
+		} else {
+			problems  = true;
+		}
+		
 	}
 
 	@Override
 	protected Boolean doInBackground(Void... params) {
 		
+		if (problems) {
+			return false;
+		}
 			HttpConnectionHelper connectionHelper = new HttpConnectionHelper();
 			try {
 				String urlVal = totalWatchingUrl + "=" + token;

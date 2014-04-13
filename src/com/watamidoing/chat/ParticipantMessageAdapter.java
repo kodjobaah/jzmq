@@ -26,6 +26,7 @@ public class ParticipantMessageAdapter extends ArrayAdapter<String> {
 		LayoutInflater inflater = (LayoutInflater) context
 				.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
+		String xmppParticipantDelimeter = context.getString(R.string.xmpp_participant_nick_delimeter);
 		if (position == 0) {
 			View rowView = inflater.inflate(R.layout.chat_layout_header,
 					parent, false);
@@ -35,7 +36,13 @@ public class ParticipantMessageAdapter extends ArrayAdapter<String> {
 			textView.setText(participantHeader);
 			TextView tv = (TextView) rowView.findViewById(R.id.chatRow);
 
-			tv.setText(values[position]);
+			String value = values[position];
+			
+			Integer n = value.lastIndexOf(xmppParticipantDelimeter);
+			if (n > 0) {
+				value = value.substring(n + 13, value.length());
+			}
+			tv.setText(value);
 
 			return rowView;
 		} else {
@@ -43,8 +50,12 @@ public class ParticipantMessageAdapter extends ArrayAdapter<String> {
 					false);
 			TextView textView = (TextView) rowView.findViewById(R.id.chatRow);
 
-			textView.setText(values[position]);
-			// change the icon for Windows and iPhone
+			String value = values[position];
+			Integer n = value.lastIndexOf(xmppParticipantDelimeter);
+			if (n > 0) {
+				value = value.substring(n + 13, value.length());
+			}
+			textView.setText(value);
 			return rowView;
 		}
 	}

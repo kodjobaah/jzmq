@@ -30,7 +30,7 @@ public class WebsocketServiceConnection implements ServiceConnection{
 		Messenger mService = new Messenger(service);
 		
 		websocketController.setMessengerService(mService);
-		Log.d("ServiceConnection.onServiceConnection","able to bind to servces");
+		Log.i("ServiceConnection.onServiceConnection","able to bind to servces");
 
 
 
@@ -40,7 +40,7 @@ public class WebsocketServiceConnection implements ServiceConnection{
 		// This is called when the connection with the service has been
 		// unexpectedly disconnected -- that is, its process crashed.
 		UtilsWhatAmIdoing.displayWebsocketProblemsDialog(activity);
-		Log.d("ServiceConnection.onServiceDisconnected","disconnected from service");
+		Log.i("ServiceConnection.onServiceDisconnected","disconnected from service");
 		websocketController.setMessengerService(null);
 	}
 

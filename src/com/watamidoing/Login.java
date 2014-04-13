@@ -74,11 +74,11 @@ public class Login extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 
 		this.activity = this;
-		Log.d("com.whatamidoing", "---------------------------1");
+		Log.i("com.whatamidoing", "---------------------------1");
 		super.onCreate(savedInstanceState);
-		Log.d("com.whatamidoing", "---------------------------2");
+		Log.i("com.whatamidoing", "---------------------------2");
 		setContentView(R.layout.activity_login);
-		Log.d("com.whatamidoing", "---------------------------3");
+		Log.i("com.whatamidoing", "---------------------------3");
 		// Set up the login form.
 		mEmail = getIntent().getStringExtra(EXTRA_EMAIL);
 		mEmailView = (EditText) findViewById(R.id.email);
@@ -260,7 +260,7 @@ public class Login extends Activity {
 				if ((connectionResult != null) && (connectionResult.getStatusCode() == HttpURLConnection.HTTP_OK)) {
 					String newAuthSuccessMessage = getResources().getString(R.string.new_auth_success_message);
 					String authSuccessMessage = getResources().getString(R.string.auth_success_message);
-					Log.d("Login.UserLoginTask.doInBackgroud","results from login["+connectionResult.getResult()+"]");
+					Log.i("Login.UserLoginTask.doInBackgroud","results from login["+connectionResult.getResult()+"]");
 					if (authSuccessMessage.equalsIgnoreCase(connectionResult.getResult()) ||
 							newAuthSuccessMessage.equalsIgnoreCase(connectionResult.getResult())) {
 						SessionParser sessionParser = connectionHelper.getPlaySession();

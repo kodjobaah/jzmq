@@ -38,6 +38,8 @@ public class SendTwitterInviteTask extends AsyncTask<Void, Void, Boolean> {
 			return false;
 		} else if (results.getStatusCode() != HttpURLConnection.HTTP_OK) {
 			return false;
+		} else if (results.getResult().contains("Unable")){
+			return false;
 		}
 
 		return true;
@@ -74,10 +76,10 @@ public class SendTwitterInviteTask extends AsyncTask<Void, Void, Boolean> {
 				UtilsWhatAmIdoing.displayGenericMessageDialog(context, message);
 			}
 
-			Log.d("sendinviteemailtask.onpostexecute", "succes:");
+			Log.i("sendinviteemailtask.onpostexecute", "succes:");
 		} else {
 			UtilsWhatAmIdoing.displayNetworkProblemsForInvitesDialog(context);
-			Log.d("sendinviteemailtask.onpostexecute", "failure:");
+			Log.i("sendinviteemailtask.onpostexecute", "failure:");
 
 		}
 	}

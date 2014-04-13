@@ -57,7 +57,7 @@ public class GetInvitedTask extends AsyncTask<Void, Void, Boolean> {
         Button cancel = (Button) dialog.findViewById(R.id.cancel_invited);
         cancel.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-               Log.d("InviteListTask.InviteListTask","Cancel Button was clicked");
+               Log.i("InviteListTask.InviteListTask","Cancel Button was clicked");
                dialog.cancel();
             }
         });
@@ -75,10 +75,10 @@ public class GetInvitedTask extends AsyncTask<Void, Void, Boolean> {
 			String urlVal = inviteUrl+"?token="+auth.getToken();
 			ConnectionResult connectionResult = connectionHelper.connect(urlVal);
 		
-			Log.d("GetInvitedTask","doInBackground["+connectionResult+"]");
+			Log.i("GetInvitedTask","doInBackground["+connectionResult+"]");
 			if ((connectionResult != null) && (connectionResult.getStatusCode() ==  HttpURLConnection.HTTP_OK)) {
 				inviteList = connectionResult.getResult();
-				Log.d("GetInvitedTask","doInBackground["+inviteList+"]");
+				Log.i("GetInvitedTask","doInBackground["+inviteList+"]");
 			}
 		
 		} finally {
@@ -115,11 +115,11 @@ public class GetInvitedTask extends AsyncTask<Void, Void, Boolean> {
 	
 			
 			
-		    Log.d("GetInvitelist.onpostexecute","succes:"+inviteList);
+		    Log.i("GetInvitelist.onpostexecute","succes:"+inviteList);
 		    showProgress(false);
 		} else {
 			showProgress(false);
-			Log.d("GetInvitelist.onpostexecute","failute:");
+			Log.i("GetInvitelist.onpostexecute","failute:");
 		}
 	}
 	

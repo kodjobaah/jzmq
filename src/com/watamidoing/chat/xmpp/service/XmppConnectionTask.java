@@ -52,11 +52,11 @@ public class XmppConnectionTask extends AsyncTask<Void, Void, Boolean> {
 		 ConnectionConfiguration config = new ConnectionConfiguration(xmppIp,Integer.valueOf(xmppPort),xmppDomain);
 		 SmackConfiguration.setDefaultPacketReplyTimeout(Integer.valueOf(xmppDefaultTimeout));
 		
-		 config.setDebuggerEnabled(true);
+		 config.setDebuggerEnabled(false);
 		 SASLAuthentication.supportSASLMechanism("PLAIN", 0);
 		 config.setSecurityMode(ConnectionConfiguration.SecurityMode.disabled);
 		 
-		  connection = new TCPConnection(config);
+	  connection = new TCPConnection(config);
 		while(count < maxLimit) {
 			
 			 try {
@@ -64,6 +64,10 @@ public class XmppConnectionTask extends AsyncTask<Void, Void, Boolean> {
 				 	connection.loginAnonymously();
 				 	count = maxLimit;
 				 	return true;
+			 } catch (NullPointerException e){
+				 e.printStackTrace();
+				 count = maxLimit;
+				 return false;
 			} catch (SmackException e) {
 				Log.i(TAG,"FAILED TRYING AGAING:"+count+"] reason for failure["+e.getMessage());
 				count = count + 1;

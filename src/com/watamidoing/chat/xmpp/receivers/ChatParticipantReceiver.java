@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
+import com.watamidoing.chat.xmpp.service.Participant;
 import com.watamidoing.reeiver.callbacks.XMPPConnectionController;
 
 public class ChatParticipantReceiver extends BroadcastReceiver {
@@ -18,7 +19,7 @@ public class ChatParticipantReceiver extends BroadcastReceiver {
 	
     @Override
     public void onReceive(final Context context, final Intent intent) {
-    		String participant = intent.getStringExtra(XMPPConnectionController.CHAT_PARTICIPANT);
+    		Participant participant = (Participant)intent.getParcelableExtra(XMPPConnectionController.CHAT_PARTICIPANT);
 		xmppController.newParticipant(participant);
     }
 }
