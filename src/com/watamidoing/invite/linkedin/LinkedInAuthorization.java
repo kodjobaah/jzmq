@@ -49,6 +49,7 @@ public class LinkedInAuthorization {
 		requestToken = service.getRequestToken();
 		
 		String url = service.getAuthorizationUrl(requestToken);
+		Log.i(TAG,"LinkedInAuthurl:"+url);
 		Intent i = new Intent(Intent.ACTION_VIEW);
 		i.setData(Uri.parse(url));
 		mContext.startActivity(i);

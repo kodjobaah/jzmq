@@ -51,7 +51,10 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.GridLayout;
+import android.widget.GridLayout.LayoutParams;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -116,6 +119,7 @@ public class WhatAmIdoing extends FragmentActivity implements
 	private static final String LOG_TAG = "whatamidoing.oncreate";
 	private InviteListTask mInviteListTask;
 	private long startTime = 0;
+	private String startSharingState = START_SHARING;
 
 	private boolean videoStart = false;
 	private boolean videoSharing = false;
@@ -179,6 +183,10 @@ public class WhatAmIdoing extends FragmentActivity implements
 
 	private XMPPServiceStoppedReceiver xmppServiceStoppedReceiver;
 
+	public Size previewSize;
+
+	private int previewWindowHeight;
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -197,6 +205,9 @@ public class WhatAmIdoing extends FragmentActivity implements
 		// Setting up camera selection
 		int cameraCount = 0;
 		Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
+		
+		 
+
 		cameraCount = Camera.getNumberOfCameras();
 		List<String> list = new ArrayList<String>();
 		boolean foundFront = false;
@@ -407,7 +418,8 @@ public class WhatAmIdoing extends FragmentActivity implements
 
 			Button startVideo = (Button) activity
 					.findViewById(R.id.start_video);
-			startVideo.setText(START_CAMERA);
+			//startVideo.setText(START_CAMERA);
+			startVideo.setBackgroundResource(R.drawable.camera);
 
 			Button locationButton = (Button) activity
 					.findViewById(R.id.locationButton);
@@ -443,16 +455,19 @@ public class WhatAmIdoing extends FragmentActivity implements
 				final Button transmissionButton = (Button) activity
 						.findViewById(R.id.start_transmission);
 
-				if (START_CAMERA.equalsIgnoreCase(text)) {
+			//	if (START_CAMERA.equalsIgnoreCase(text)) {
+				if (!videoStart) {
 					transmissionButton.setEnabled(true);
-					startVideo.setText(STOP_CAMERA);
+					startVideo.setBackgroundResource(R.drawable.stop_camera);
+					//startVideo.setText(STOP_CAMERA);
 					startCamera();
 					videoStart = true;
 
 				} else {
 					camera.stopPreview();
 					mainLayout.removeAllViews();
-					startVideo.setText(START_CAMERA);
+					//startVideo.setText(START_CAMERA);
+					startVideo.setBackgroundResource(R.drawable.camera);;
 					cameraView = null;
 					videoStart = false;
 					camera = null;
@@ -505,7 +520,7 @@ public class WhatAmIdoing extends FragmentActivity implements
 						activity,
 						com.watamidoing.total.service.TotalWatchersService.class);
 
-				if (START_SHARING.equalsIgnoreCase(text)) {
+				if (!videoSharing) {
 					startTransmission.setEnabled(true);
 
 					if (isServiceRunning(WebsocketService.class.getName())) {
@@ -596,7 +611,9 @@ public class WhatAmIdoing extends FragmentActivity implements
 					 * webSocketController, activity);
 					 * startWebSocketTask.execute((Void) null);
 					 */
-					startTransmission.setText(STOP_SHARING);
+					//startTransmission.setText(STOP_SHARING);
+					startSharingState = STOP_SHARING;
+					startTransmission.setBackgroundResource(R.drawable.share_red);
 					doBindService();
 				} else {
 					stopService(msgIntent);
@@ -607,7 +624,9 @@ public class WhatAmIdoing extends FragmentActivity implements
 
 					doUnbindChatService();
 					doUnbindService();
-					startTransmission.setText(START_SHARING);
+					startSharingState = START_SHARING;
+					//startTransmission.setText(START_SHARING);
+					startTransmission.setBackgroundResource(R.drawable.share_blue);
 				}
 
 			}
@@ -680,7 +699,9 @@ public class WhatAmIdoing extends FragmentActivity implements
 						.findViewById(R.id.start_transmission);
 				if (results) {
 
-					startTransmissionButton.setText(STOP_SHARING);
+					//startTransmissionButton.setText(STOP_SHARING);
+					startSharingState = STOP_SHARING;
+					startTransmissionButton.setBackgroundResource(R.drawable.share_red);
 					startTransmissionButton.setEnabled(true);
 
 					Button viewSharers = (Button) activity
@@ -711,14 +732,34 @@ public class WhatAmIdoing extends FragmentActivity implements
 	@Override
 	public void onWindowFocusChanged(boolean hasFocus) {
 		super.onWindowFocusChanged(hasFocus);
+		
+		
+		
+		
 		GridLayout gl = (GridLayout) this.findViewById(R.id.video_display);
 		final Button viewSharers = (Button) activity
 				.findViewById(R.id.viewSharers);
 		int width = viewSharers.getWidth();
+		int height = viewSharers.getHeight();
 
+		LinearLayout momentsLayout = (LinearLayout)this.findViewById(R.id.momemts_frame);
+		previewWindowHeight =  momentsLayout.getLayoutParams().height;
+		
+		final ImageButton chatButton = (ImageButton)activity.findViewById(R.id.send_messge);
+		//chatButton.setMaxWidth(momentsLayout.getLayoutParams().width);
+		
+		ViewGroup.LayoutParams shareParams = chatButton.getLayoutParams();
+		//shareParams.addRule(RelativeLayout.ALIGN_PARENT_RIGHT, navigationLogo.getId());
+		
+		shareParams.width = momentsLayout.getLayoutParams().width;
+		shareParams.height = height;
+		chatButton.setLayoutParams(shareParams);
+		
+		
 		final Button startTransmissionButton = (Button) activity
 				.findViewById(R.id.start_transmission);
 		startTransmissionButton.setWidth(width);
+		startTransmissionButton.setHeight(height);
 
 		final Button startVideo = (Button) activity
 				.findViewById(R.id.start_video);
@@ -751,9 +792,7 @@ public class WhatAmIdoing extends FragmentActivity implements
 		Log.i(TAG, "Resume called serviceRunning =["
 				+ isServiceRunning(WebsocketService.class.getName())
 				+ "] and share=[" + videoSharing + "]");
-		final Button startTransmissionButton = (Button) activity
-				.findViewById(R.id.start_transmission);
-		boolean videoBeingShared = startTransmissionButton.getText() == STOP_SHARING;
+		boolean videoBeingShared = startSharingState == STOP_SHARING;
 		if (isServiceRunning(WebsocketService.class.getName())
 				&& videoBeingShared) {
 			videoSharing = true;
@@ -803,12 +842,13 @@ public class WhatAmIdoing extends FragmentActivity implements
 		final Button transmissionButton = (Button) activity
 				.findViewById(R.id.start_transmission);
 
-		transmissionButton.setText(START_SHARING);
+		//transmissionButton.setText(START_SHARING);
+		startSharingState = START_SHARING;
+		transmissionButton.setBackgroundResource(R.drawable.share_blue);
 		videoSharing = false;
 		Button viewSharers = (Button) activity.findViewById(R.id.viewSharers);
 		viewSharers.setEnabled(false);
 		doUnbindService();
-		transmissionButton.setText(START_SHARING);
 		if (cameraView != null) {
 			cameraView.sharingHasStopepd();
 		}
@@ -1060,7 +1100,6 @@ public class WhatAmIdoing extends FragmentActivity implements
 		private SurfaceHolder holder;
 		long videoTimestamp = 0;
 
-		Bitmap bitmap;
 		Canvas canvas;
 
 		private volatile boolean sharingStarted;
@@ -1090,22 +1129,26 @@ public class WhatAmIdoing extends FragmentActivity implements
 			}
 
 			try {
+				
 				camera.setPreviewDisplay(holder);
 				camera.setPreviewCallback(this);
-
+				
 				Camera.Parameters currentParams = camera.getParameters();
+				List<int[]> previewFpsRanges = currentParams.getSupportedPreviewFpsRange();
+				int[] maxFps = previewFpsRanges.get(previewFpsRanges.size()-1);
+				currentParams.setPreviewFpsRange(maxFps[0],maxFps[1]);	
 				Log.v(LOG_TAG,
 						"Preview imageWidth: "
 								+ currentParams.getPreviewSize().width
 								+ " imageHeight: "
 								+ currentParams.getPreviewSize().height);
 
+				currentParams.getPreviewSize().height = previewWindowHeight;
 				// Use these values
 				imageWidth = currentParams.getPreviewSize().width;
 				imageHeight = currentParams.getPreviewSize().height;
+				Log.v(LOG_TAG,"new PRVIEW HIGHT:"+imageHeight+" this is ["+previewWindowHeight+"]");
 
-				bitmap = Bitmap.createBitmap(imageWidth, imageHeight,
-						Bitmap.Config.ALPHA_8);
 				camera.startPreview();
 
 			} catch (IOException e) {
@@ -1114,6 +1157,7 @@ public class WhatAmIdoing extends FragmentActivity implements
 			}
 
 		}
+		
 
 		public void surfaceChanged(SurfaceHolder holder, int format, int width,
 				int height) {
@@ -1131,6 +1175,12 @@ public class WhatAmIdoing extends FragmentActivity implements
 			// Use these values
 			imageWidth = currentParams.getPreviewSize().width;
 			imageHeight = currentParams.getPreviewSize().height;
+			/*
+			currentParams.setPreviewSize(currentParams.getPreviewSize().width,previewWindowHeight);
+		    requestLayout();
+		    camera.setParameters(currentParams);
+		    camera.startPreview();
+		    */
 		}
 
 		@Override
@@ -1440,7 +1490,7 @@ public class WhatAmIdoing extends FragmentActivity implements
 		// Registering the receiver of chat messages
 
 		if (isVideoSharing() && isVideoStart()) {
-			Button displayChatButton = (Button) activity
+			ImageButton displayChatButton = (ImageButton) activity
 					.findViewById(R.id.send_messge);
 			displayChatButton.setEnabled(false);
 			Log.i(TAG, "---display chat button should be disabled");
@@ -1596,7 +1646,7 @@ public class WhatAmIdoing extends FragmentActivity implements
 	public void stopChatService() {
 
 		Log.i(TAG, "stopChatService -- should be enabling the button");
-		Button displayChatButton = (Button) activity
+		ImageButton displayChatButton = (ImageButton) activity
 				.findViewById(R.id.send_messge);
 		displayChatButton.setEnabled(true);
 		chatParticipantQueue = new LinkedList<Participant>();

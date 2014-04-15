@@ -60,24 +60,14 @@ public class ImageHandler extends Handler {
 			
 				image.compressToJpeg(previewRect,compressionQuality, jpegOutputStream);
 
-				
-				byte[] jdata = jpegOutputStream.toByteArray();
-				BitmapFactory.Options bitmapFatoryOptions = new BitmapFactory.Options();
-	              bitmapFatoryOptions.inPreferredConfig = Bitmap.Config.RGB_565;
-	              Bitmap bmp = BitmapFactory.decodeByteArray(jdata, 0, jdata.length, bitmapFatoryOptions);
-		
-	              ByteArrayOutputStream pngOutputStream = new ByteArrayOutputStream();
-	              
-	              bmp.compress(CompressFormat.PNG, 80, pngOutputStream);
-	              
 				// byte[] jdata = resizeImage(baos.toByteArray());
 				byte[] frame = jpegOutputStream.toByteArray();
 
             		//byte[] frame = msg.getData().getByteArray("frame");
             		
             		String res = Base64.encodeToString(frame, Base64.DEFAULT);
-            		Log.i(TAG,"SIZE BEFORE ENCODING:"+res.length());
-            		if (res.length() > 10000) {
+            		Log.d(TAG,"SIZE BEFORE ENCODING:"+res.length());
+            		if (res.length() > 8000) {
             			compressionQuality = compressionQuality - 2; 
             		}
             		 ByteArrayOutputStream rstBao = new ByteArrayOutputStream();

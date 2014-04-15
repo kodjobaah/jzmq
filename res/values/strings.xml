@@ -38,7 +38,7 @@
     <string name="share_location">Share Location</string>    
     <string name="start_transmission">Start Sharing</string>
     <string name="end_transmission">Stop Sharing</string>
-    <string name="view_sharers">Whoes Watching!</string>
+    <string name="view_sharers">Whoes Accepted!</string>
     <string name="welcome_message">Share on Facebook, Twitter, LinkedIn or by Email</string>
     <string name="invited_dialog_message">Below is who is watching</string>
     <string name="invite_progress_fetch_invites">Fetching Previous Invites&#8230;</string>

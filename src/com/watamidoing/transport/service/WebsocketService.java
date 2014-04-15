@@ -18,7 +18,6 @@ import android.util.Base64;
 import android.util.Log;
 
 import com.waid.R;
-import com.watamidoing.camera.ArithmeticCodeCompression;
 import com.watamidoing.contentproviders.Authentication;
 import com.watamidoing.contentproviders.DatabaseHandler;
 import com.watamidoing.transport.receivers.NotAbleToConnectReceiver;
@@ -90,43 +89,17 @@ public class WebsocketService  extends Service {
                 	
                 	if (mConnection != null) {
                 		byte[] frame = msg.getData().getByteArray("frame");
-                		Log.i(TAG,"------------------RECEIVED SHOUDL BE BEFORE COMPRESS TRANSMITTING----:"+frame.length);
+                		Log.d(TAG,"------------------RECEIVED SHOUDL BE BEFORE COMPRESS TRANSMITTING----:"+frame.length);
                 		String res = Base64.encodeToString(frame, Base64.DEFAULT);
                 		
-                		/*
-                		ArithmeticCodeCompression acc = new ArithmeticCodeCompression();
-                		
-                		byte[] compressed = frame;
-						try {
-							compressed = acc.compress(res.getBytes());
-						} catch (IOException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-							
-						}
-				
-						*/
                 		if  (frame != null) {
-                	
-                			/*
-                			Log.i(TAG,"------------------RECEIVED SHOUDL BE AFTER COMPRESS TRANSMITTING----:"+compressed.length);
-                	
-                			String newRes = Base64.encodeToString(compressed, Base64.DEFAULT);
-                			*/
                 			if ((res != null) && (mConnection !=  null)) {
-                				//mConnection.sendTextMessage(newRes);
                 				mConnection.sendTextMessage(res);
                 			}
                 		}
                 		Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
                 	}
-                	/*
-                	int result = NativeMethods.pushFrame(frame, frame.length);
-                	if (result == -1) {
-                		notDone = false;
-                	}
-                	*/
-                    break;
+                	    break;
                default:
                     super.handleMessage(msg);
             }
