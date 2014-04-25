@@ -12,6 +12,8 @@ import android.app.Activity;
 import android.graphics.Point;
 import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.util.Patterns;
 import android.view.LayoutInflater;
@@ -32,6 +34,7 @@ import com.watamidoing.contentproviders.Authentication;
 import com.watamidoing.contentproviders.DatabaseHandler;
 import com.watamidoing.invite.email.adapter.InviteListExpandableAdapter;
 import com.watamidoing.invite.email.callback.InviteDialogInteraction;
+import com.watamidoing.invite.email.model.Invite;
 import com.watamidoing.tasks.SendInviteEmailTask;
 import com.watamidoing.utils.UtilsWhatAmIdoing;
 import com.watamidoing.view.WhatAmIdoing;
@@ -111,7 +114,47 @@ public class InviteEmailFragment extends DialogFragment {
 			}
 		});
 
+		EditText emailEditText = (EditText)view.findViewById(R.id.invite_email);
+		emailEditText.addTextChangedListener(new TextWatcher() {
 
+			@Override
+			public void beforeTextChanged(CharSequence s, int start, int count,
+					int after) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void onTextChanged(CharSequence s, int start, int before,
+					int count) {
+				List<Invite> original = expListAdapter.getOriginal();
+				
+				String filter = s.toString();
+				
+				List<Invite> invites = original;
+				if ((filter != null) && (filter.trim().length() > 1)) {
+					List<Invite> filtered = new ArrayList<Invite>();
+					for(Invite inv : original) {
+							if (inv.getEmail().contains(filter)) {
+								filtered.add(inv);
+							}
+					}
+					invites = filtered;
+				} 
+				expListAdapter = new InviteListExpandableAdapter(mContext,original,invites);
+				ExpandableListView invitelist = (ExpandableListView) view.findViewById(R.id.invite_list);
+				invitelist.setAdapter(expListAdapter);
+				expListAdapter.notifyDataSetChanged();
+			}
+
+			@Override
+			public void afterTextChanged(Editable s) {
+				// TODO Auto-generated method stub
+				
+			}
+			
+		});
+		
 		Button inviteToView = (Button)view.findViewById(R.id.invite_to_view);
 		inviteToView.setOnClickListener(new View.OnClickListener() {
 
@@ -127,7 +170,7 @@ public class InviteEmailFragment extends DialogFragment {
 					previousSelected = expListAdapter.getAllPreviousSelectedInvites();
 				}
 
-				if ((email.length() > 0) && !pattern.matcher(email).matches()){
+				if ((previousSelected.size() < 1) && (email.length() > 0) && !pattern.matcher(email).matches()){
 					emailEditText.setError(mContext.getString(R.string.error_invalid_email));
 					emailEditText.requestFocus();
 				} else if ((previousSelected.size() <= 0) && (email.length() <= 0)){
@@ -135,7 +178,12 @@ public class InviteEmailFragment extends DialogFragment {
 					emailEditText.requestFocus();
 
 				} else {
-					String validEmail = (email.length() > 0) ? email : null;
+					
+					String validEmail = null;	
+					if (pattern.matcher(email).matches()) {
+						validEmail = email;
+					}
+				
 					String inviteUrl = mContext.getString(R.string.send_invite_url);
 					Authentication auth =  DatabaseHandler.getInstance(mContext).getDefaultAuthentication();
 					String selected = null;
@@ -150,7 +198,6 @@ public class InviteEmailFragment extends DialogFragment {
 					SendInviteEmailTask sendInviteEmailTask = new SendInviteEmailTask(url,mContext);
 					sendInviteEmailTask.execute((Void) null);
 					fragment.getDialog().dismiss();
-
 				}
 
 			}
@@ -191,7 +238,9 @@ public class InviteEmailFragment extends DialogFragment {
 		LinkedHashMap<String, List<String>> invitelistCollection = new LinkedHashMap<String, List<String>>();
 
 
+		List<Invite> invites = new ArrayList<Invite>();
 		for(int i= 0; i < values.length; i++) {
+
 			String val = values[i];
 			String[] items = val.split(":");
 
@@ -207,19 +256,11 @@ public class InviteEmailFragment extends DialogFragment {
 			if (items.length > 2)
 				lastName = items[2];
 
-			String groupName = "not defined";
-			if ((firstName != null) && (lastName != null))
-				groupName = firstName+" "+lastName;
-
-			String tok = UUID.randomUUID().toString();
-			groupList.put(tok,groupName);
-			ArrayList<String> childList = new ArrayList<String>();
-			childList.add(email);
-			invitelistCollection.put(tok, childList);
-
+			Invite in = new Invite(email,lastName,firstName);
+			invites.add(in);
+		
 		}
-		expListAdapter = new InviteListExpandableAdapter(
-				mContext, groupList, invitelistCollection);
+		expListAdapter = new InviteListExpandableAdapter(mContext,invites,invites);
 		invitelist.setIndicatorBounds(0, 20);
 		invitelist.setAdapter(expListAdapter);
 		

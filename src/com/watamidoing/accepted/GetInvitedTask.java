@@ -36,8 +36,7 @@ public class GetInvitedTask extends AsyncTask<Void, Void, Boolean> {
 	private View mInviteStatusView;
 	private View mInviteFormView;
 	private Dialog dialog;
-	private InviteListExpandableAdapter expListAdapter;
-
+	
 	public GetInvitedTask(final WhatAmIdoing context) {
 		Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 		this.mContext = context;
@@ -48,8 +47,6 @@ public class GetInvitedTask extends AsyncTask<Void, Void, Boolean> {
         mInviteFormView = dialog.findViewById(R.id.invited_form);
  		mInviteStatusView = dialog.findViewById(R.id.invited_status);
 		
-	    ScreenDimension sm = UtilsWhatAmIdoing.getScreenDimensions(mContext);
-	    LayoutParams params = dialog.getWindow().getAttributes();
 	    
 	    dialog.show();
         showProgress(true);
