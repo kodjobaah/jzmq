@@ -14,7 +14,7 @@
     <string name="send_invite_facebook_url">http://www.whatamidoing.info:9000/inviteFacebook</string>
     <string name="send_invite_linkedin_url">http://www.whatamidoing.info:9000/inviteLinkedin</string>
     <string name="invalidate_token_url">http://www.whatamidoing.info:9000/invalidateToken</string>
-    <string name="publish_url">ws://5.79.24.141:12345/publishVideo</string>
+    <string name="publish_url">ws://www.whatamidoing.info:12345/publishVideo</string>
     <string name="share_location_url">http://www.whatamidoing.info:9000/shareLocation</string>
     <string name="group_jid_url">http://www.whatamidoing.info:9000/getGroupJid</string>
     <string name="invite_location_url">http://www.whatamidoing.info/whatamidoing?invitedId</string>

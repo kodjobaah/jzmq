@@ -123,7 +123,7 @@ public class WebsocketService extends Service {
 							if ((res != null) && (mConnection != null)) {
 
 								if (mConnection.isConnected()) {
-									mConnection.sendTextMessage(res);
+									mConnection.sendTextMessage(res+":"+(int)difference);
 								} else {
 									websocketService.stopSelf();
 								}
