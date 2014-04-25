@@ -1,7 +1,9 @@
 package com.watamidoing.total.service;
 
 import java.util.ArrayList;
+import java.util.List;
 
+import android.app.ActivityManager;
 import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
@@ -16,6 +18,7 @@ import android.util.Log;
 
 import com.watamidoing.reeiver.callbacks.TotalWatchersController;
 import com.watamidoing.total.receivers.TotalWatchersReceiver;
+import com.watamidoing.transport.service.WebsocketService;
 
 
 public class TotalWatchersService extends Service {
@@ -87,9 +90,15 @@ public class TotalWatchersService extends Service {
      */
     class IncomingHandler extends Handler {
 
+		private TotalWatchersService totalWatchersService;
+
 		public IncomingHandler() {
     		}
        	
+		public IncomingHandler(TotalWatchersService totalWatchersService) {
+			this.totalWatchersService = totalWatchersService;
+		}
+
 		@Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
@@ -99,8 +108,12 @@ public class TotalWatchersService extends Service {
                 		sendTotalWatchers(message);
 				try {
 					Thread.sleep(3000);
-					if (isRunning)
+					if (isServiceRunning(WebsocketService.class.getName())) {
 						getTotalUsersWatching();
+					} else {
+						totalWatchersService.stopSelf();
+					}
+					
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -143,9 +156,24 @@ public class TotalWatchersService extends Service {
     	return Service.START_NOT_STICKY;
     }
     
+    public boolean isServiceRunning(String serviceClassName) {
+		final ActivityManager activityManager = (ActivityManager) this
+				.getSystemService(Context.ACTIVITY_SERVICE);
+		final List<android.app.ActivityManager.RunningServiceInfo> services = activityManager
+				.getRunningServices(Integer.MAX_VALUE);
+
+		for (android.app.ActivityManager.RunningServiceInfo runningServiceInfo : services) {
+			if (runningServiceInfo.service.getClassName().equals(
+					serviceClassName)) {
+				return true;
+			}
+		}
+		return false;
+	}
+    
     private void start() {
     		Log.i(TAG,"------------ STARTED TOTAL WATCHERS SERVICE");
-    	    incomingHandler = new IncomingHandler();
+    	    incomingHandler = new IncomingHandler(this);
     		mMessenger= new Messenger(incomingHandler);
     		totalUsersWatchingTask = new TotalUsersWatchingTask(this);
 		totalUsersWatchingTask.execute((Void)null);

@@ -3,7 +3,7 @@
  <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
   <item> 
       <shape android:shape="rectangle"> 
-       <stroke android:width="5dp" android:color="#12b0e3" />
+       <stroke android:width="5dp" android:color="#6b8bc8" />
      <gradient 
          android:startColor="#B8B8B8"
          android:endColor="#000000" 

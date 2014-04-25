@@ -1,4 +1,4 @@
-package com.watamidoing.view.adapter;
+package com.watamidoing.invite.email.adapter;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 
 import android.app.Activity;
+import android.graphics.Typeface;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -127,6 +128,7 @@ public class InviteListExpandableAdapter extends BaseExpandableListAdapter {
     		    // Center the text vertically
     		    textView.setGravity(Gravity.CENTER_VERTICAL | Gravity.LEFT);
     		    // Set the text starting position
+    		    textView.setTypeface(null, Typeface.BOLD); 
     		    textView.setPadding(45, 0, 0, 0);
     		    
     		

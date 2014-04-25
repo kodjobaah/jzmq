@@ -39,7 +39,6 @@ public class WebsocketServiceConnection implements ServiceConnection{
 	public void onServiceDisconnected(ComponentName className) {
 		// This is called when the connection with the service has been
 		// unexpectedly disconnected -- that is, its process crashed.
-		UtilsWhatAmIdoing.displayWebsocketProblemsDialog(activity);
 		Log.i("ServiceConnection.onServiceDisconnected","disconnected from service");
 		websocketController.setMessengerService(null);
 	}

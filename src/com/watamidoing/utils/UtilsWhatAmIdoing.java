@@ -18,6 +18,7 @@ import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
 
+
 import com.waid.R;
 import com.watamidoing.Login;
 import com.watamidoing.view.WhatAmIdoing;
@@ -32,6 +33,15 @@ public class UtilsWhatAmIdoing {
 			      WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
 	}
 	
+	public static Point getScreenSize(Activity activity) {
+		Point size = null;
+		if (activity != null) {
+		Display display = activity.getWindowManager().getDefaultDisplay();
+		size = new Point();
+		display.getSize(size);
+		}
+		return size;
+	}
 	public static ScreenDimension getScreenDimensions(Activity activity) {
 		
 		WindowManager w =activity.getWindowManager();

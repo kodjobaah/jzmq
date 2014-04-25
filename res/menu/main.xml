@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:whatamidoing="http://schemas.android.com/apk/res-auto">
     
     
     <item android:id="@+id/linkedin_menu_item"
@@ -23,11 +24,21 @@
           android:title="@string/email_menu_names"
           android:showAsAction="ifRoom"/>
     
+    <item android:id="@+id/send_location_menu_item"
+          android:title="@string/share_location"
+          android:showAsAction="never"/>
     
+    
+    
+    <item android:id="@+id/whos_accepted_menu_item"
+          android:title="@string/view_sharers"
+          android:showAsAction="never"/>
     
     <item android:id="@+id/logout_menu_item"
           android:icon="@drawable/logout"
           android:title="@string/logout_menu_names"
-          android:showAsAction="ifRoom"/>
+          android:showAsAction="never"/>
+    
+    
     
 </menu>

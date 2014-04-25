@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <issue id="MissingPrefix" severity="ignore" />
+    <issue id="MissingTranslation" severity="ignore" />
+    <issue id="Orientation" severity="ignore" />
+    <issue id="Proguard" severity="ignore" />
+    <issue id="ValidFragment" severity="ignore" />
+</lint>

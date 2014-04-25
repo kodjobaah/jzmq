@@ -34,7 +34,7 @@
         android:layout_height="wrap_content"
         android:columnCount="2"
         android:orientation="vertical"
-        android:rowCount="5"
+        android:rowCount="10"
         android:stretchMode="columnWidth" 
        >
 
@@ -48,10 +48,12 @@
     	       	android:ems="10"
     	       	android:layout_row="0"
     	       	android:layout_column="0"
+    	       	android:paddingRight="20dp"
     	       	android:layout_columnSpan="2"
     	       	android:layout_gravity="fill"
     	       	android:layout_width="match_parent"
         		android:layout_height="wrap_content"
+        		android:background="@color/facebook_blue"
     	       	android:text="@string/invite_dialog_message"
 				android:textAppearance="?android:attr/textAppearanceMedium" >
 
@@ -93,6 +95,7 @@
 			
 			<ExpandableListView
 			        android:layout_row="3"
+			        android:layout_rowSpan="5"
        				android:layout_gravity="fill_horizontal"
 					android:layout_columnSpan="2"
 					android:layout_column="0"
@@ -112,9 +115,9 @@
         			>
       		</ExpandableListView>
 				<Button
-      	   		    style="@style/BtnStyleBlack"
+      	   		    style="@style/btnStyleArsenic"
         	      	android:id="@+id/invite_to_view"
-        	      	android:layout_row="4"
+        	      	android:layout_row="9"
         	      	android:layout_column="0"
         	      	android:layout_width="wrap_content"
        				android:layout_height="wrap_content"
@@ -122,9 +125,9 @@
        				android:text="@string/invite_button" />
    		 
         	   <Button
-        	    style="@style/BtnStyleBlack"
+        	    style="@style/btnStyleArsenic"
     		    android:id="@+id/cancel_invite"
-    		    android:layout_row="4"
+    		    android:layout_row="9"
     		    android:layout_column="1"
     		   android:layout_width="wrap_content"
        			android:layout_height="wrap_content"

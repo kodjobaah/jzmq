@@ -1,4 +1,4 @@
-package com.watamidoing.tasks;
+package com.watamidoing.accepted;
 
 import java.net.HttpURLConnection;
 
@@ -18,13 +18,13 @@ import android.widget.TextView;
 import com.waid.R;
 import com.watamidoing.contentproviders.Authentication;
 import com.watamidoing.contentproviders.DatabaseHandler;
+import com.watamidoing.invite.email.adapter.InviteListExpandableAdapter;
 import com.watamidoing.parser.ParseInviteList;
 import com.watamidoing.utils.ConnectionResult;
 import com.watamidoing.utils.HttpConnectionHelper;
 import com.watamidoing.utils.ScreenDimension;
 import com.watamidoing.utils.UtilsWhatAmIdoing;
 import com.watamidoing.view.WhatAmIdoing;
-import com.watamidoing.view.adapter.InviteListExpandableAdapter;
 import com.watamidoing.view.adapter.WhosNotWatchingAdapter;
 import com.watamidoing.view.adapter.WhosWatchingAdapter;
 

@@ -58,7 +58,7 @@ public class TotalUsersWatchingTask extends AsyncTask<Void, Void, Boolean> {
 					try {
 						myNum = Integer.parseInt(result);
 						String message = context.getString(R.string.total_views_message);
-						watchers = message+"(" + myNum + ")";
+						watchers = message+" " + myNum + " ";
 
 					} catch (NumberFormatException nfe) {
 						nfe.printStackTrace(); // Handle parse error.
