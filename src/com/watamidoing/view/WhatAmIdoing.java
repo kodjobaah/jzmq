@@ -309,18 +309,8 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 		
 		if (videoStart) {
 
-			ImageButton startVideo = (ImageButton) activity
-					.findViewById(R.id.start_video);
-			//startVideo.setText(START_CAMERA);
-			startVideo.setImageResource(R.drawable.camera);
-
-			mainLayout.removeAllViews();
-			cameraView = null;
-			/*
-			 * if (camera != null) { camera.release(); }
-			 */
-			camera = null;
-
+			stopVideo(true);
+			
 			if (locationManager != null) {
 				locationManager.removeUpdates(waidLocationListener);
 				locationManager = null;
@@ -332,8 +322,6 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 		super.onSaveInstanceState(savedInstanceState);
 	}
 	
-	
-
 	public void startVideo() {
 
 		runOnUiThread(new Thread(new Runnable() {
@@ -353,7 +341,7 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 
 				} else {
 					
-					stopVideo();
+					stopVideo(false);
 
 					// camera.release();
 
@@ -367,7 +355,7 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 
 	}
 
-	private void stopVideo()  {
+	private void stopVideo(boolean wasVideoStarted)  {
 		
 		ImageButton startVideo = (ImageButton) activity
 				.findViewById(R.id.start_video);
@@ -385,24 +373,35 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 			startVideo.setImageResource(R.drawable.camera);
 		}
 		cameraView = null;
-		videoStart = false;
+		videoStart =wasVideoStarted;
 		camera = null;
 	}
+	
+	public void whoHasAccepted(View view) {
+		whoHasAccepted();
+	}
+	
 	private void whoHasAccepted() {
 		if (videoStart) {
 			mInvitedTaskListView = new GetInvitedTask(activity);
 			mInvitedTaskListView.execute((Void) null);
 		} else {
 			String message = activity
-					.getString(R.string.camera_not_started);
-			UtilsWhatAmIdoing.displayGenericMessageDialog(activity,
+					.getString(R.string.can_not_see_whoes_watching);
+			UtilsWhatAmIdoing.displayGenericToast(activity,
 					message);
 		}
 
 	}
+	
+	
+	public void shareLocation(View view){
+		shareLocation();
+	}
+	
 	private void shareLocation() {
 
-		if (videoStart) {
+		if (videoSharing) {
 
 			runOnUiThread(new Thread(new Runnable() {
 				public void run() {
@@ -472,8 +471,14 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 				}
 			}));
 		} else {
-			locationManager.removeUpdates(waidLocationListener);
-			locationManager = null;
+			if (locationManager != null) {
+				locationManager.removeUpdates(waidLocationListener);
+				locationManager = null;
+			}
+			String message = activity
+					.getString(R.string.can_not_share_location);
+			UtilsWhatAmIdoing.displayGenericToast(activity,
+					message);
 		}
 
 
@@ -637,7 +642,7 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 
 					if (videoStart) {
 						cameraHasBeenStarted = true;
-						stopVideo();
+						stopVideo(false);
 					} else {
 						cameraHasBeenStarted = false;
 					}
@@ -857,16 +862,43 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 		android.view.ViewGroup.LayoutParams cbLayoutParams = chatButton.getLayoutParams();
 		cbLayoutParams.width = localWidth;
 		chatButton.setLayoutParams(cbLayoutParams);
-		final ImageButton selectCamera = (ImageButton)activity.findViewById(R.id.selectCamera);
 		
+	
+		final TextView totalWatchers = (TextView)activity.findViewById(R.id.totalWatchers);
+		int paddingLeftTotalWatchers = totalWatchers.getPaddingLeft();
+		int paddingRightTotalWatchers = totalWatchers.getPaddingRight();
+		int paddingBottomTotalWatchers = totalWatchers.getPaddingBottom();
+		int paddingTopTotalWatchers = totalWatchers.getPaddingTop();
+		paddingRightTotalWatchers = (int)(width1 * 0.16);
+		totalWatchers.setPadding(paddingLeftTotalWatchers, paddingTopTotalWatchers, paddingRightTotalWatchers, paddingBottomTotalWatchers);
+		
+		final ImageButton shareLocation = (ImageButton)activity.findViewById(R.id.shareLocation);
+		int paddingLeftShareLocation = shareLocation.getPaddingLeft();
+		int paddingRightShareLocation = shareLocation.getPaddingRight();
+		int paddingBottomShareLocation = shareLocation.getPaddingBottom();
+		int paddingTopShareLocation = shareLocation.getPaddingTop();
+		paddingRightShareLocation = (int)(width1 * 0.16);
+		shareLocation.setPadding(paddingLeftShareLocation, paddingTopShareLocation, paddingRightShareLocation, paddingBottomShareLocation);
+		
+		final ImageButton viewSharers = (ImageButton)activity.findViewById(R.id.viewSharers);
+		int paddingLeftViewSharers = viewSharers.getPaddingLeft();
+		int paddingRightViewSharers = viewSharers.getPaddingRight();
+		int paddingBottomViewSharers = viewSharers.getPaddingBottom();
+		int paddingTopViewSharers = viewSharers.getPaddingTop();
+		paddingRightViewSharers = (int)(width1 * 0.16);
+		viewSharers.setPadding(paddingLeftViewSharers, paddingTopViewSharers, paddingRightViewSharers, paddingBottomViewSharers);
+	  /*	
+		final ImageButton selectCamera = (ImageButton)activity.findViewById(R.id.selectCamera);
 		int paddingLeftCamera = selectCamera.getPaddingLeft();
 		int paddingRightCamera = selectCamera.getPaddingRight();
 		int paddingBottomCamera = selectCamera.getPaddingBottom();
 		int paddingTopCamera = selectCamera.getPaddingTop();
-		
 		paddingRightCamera = (int)(width1 * 0.25);
-		
 		selectCamera.setPadding(paddingLeftCamera, paddingTopCamera, paddingRightCamera, paddingBottomCamera);
+		
+		*/
+		
+		
 		gl.requestLayout();
 	}
 

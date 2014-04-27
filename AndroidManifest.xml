@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.waid"
-    android:versionCode="38"
+    android:versionCode="40"
     android:versionName="2.4.0" >
 
    <supports-screens
@@ -112,8 +112,8 @@
          <service
              android:launchMode="singleTask" 
              android:alwaysRetainTaskState="true"
-              android:name="com.watamidoing.transport.service.WebsocketService"
-       	 android:process=":websocketservice" />
+             android:name="com.watamidoing.transport.service.WebsocketService"
+       	 	 android:process=":websocketservice" />
     
     </application>    
     

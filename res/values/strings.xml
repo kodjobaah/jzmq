@@ -69,6 +69,8 @@
     <string name="sharing_service_connection_closed">Sharing Connection Closed Try Again!!</string>
     <string name="info">Info</string>
     <string name="camera_not_started">You need to "start camera" and "start sharing" before you can invite</string>
+    <string name="can_not_share_location">You need to "start camera" and "start sharing" before sharing your location</string>
+    <string name="can_not_see_whoes_watching">You need to "start camera" and "start sharing" before you can view whoes watching</string>
     <string name="video_not_started">You need to Start Recording Before You can Share</string>
     <string name="video_not_started_view_sharers">You need to start recording and share the moment</string>
     <string name="invited_progress_fetch_invites">Getting whoes Watching!</string>
