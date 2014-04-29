@@ -20,9 +20,6 @@ import com.watamidoing.view.WhatAmIdoing;
 public class XmppConnectionTask extends AsyncTask<Void, Void, Boolean> {
 
 	private static final String TAG = "XmppConnectionTask";
-	private String url;
-	private WhatAmIdoing context;
-	private ConnectionResult results;
 	private XmppConnectionNotifiction connectionNotification;
 	private XMPPConnection connection;
 	private XMPPService xmppService;
@@ -56,8 +53,8 @@ public class XmppConnectionTask extends AsyncTask<Void, Void, Boolean> {
 		 SASLAuthentication.supportSASLMechanism("PLAIN", 0);
 		 config.setSecurityMode(ConnectionConfiguration.SecurityMode.disabled);
 		 
-	  connection = new TCPConnection(config);
-		while(count < maxLimit) {
+		 connection = new TCPConnection(config);
+		 while(count < maxLimit) {
 			
 			 try {
 				 	connection.connect();			

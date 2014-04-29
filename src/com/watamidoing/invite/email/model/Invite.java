@@ -23,4 +23,12 @@ public class Invite {
 		return email;
 	}
 	
+	public int hashCode() {
+		return email.hashCode();
+	}
+
+    public boolean equals(Invite invite) {
+    		return this.email.equalsIgnoreCase(invite.email);
+    }
+	
 }

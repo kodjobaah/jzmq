@@ -2,9 +2,11 @@ package com.watamidoing.invite.email;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -47,6 +49,7 @@ public class InviteEmailFragment extends DialogFragment {
 	private InviteEmailFragment fragment;
 	private InviteListExpandableAdapter expListAdapter;
 	private InviteDialogInteraction inviteDialogInteration;
+	private ExpandableListView invitelist;
 
 	public static InviteEmailFragment newInstance(String title, Activity context, InviteDialogInteraction inviteDialogInteraction) {
 
@@ -58,10 +61,10 @@ public class InviteEmailFragment extends DialogFragment {
 		frag.inviteDialogInteration = inviteDialogInteraction;
 		return frag;
 	}
-	
+
 	@Override
 	public void onStart() {
-	
+
 		//This happens when the screen is rotated -- so removing the dialog
 		if (inviteDialogInteration != null) {
 			inviteDialogInteration.setInviteForm(view.findViewById(R.id.invite_form));
@@ -70,35 +73,35 @@ public class InviteEmailFragment extends DialogFragment {
 			inviteDialogInteration.showInviteProgress(true);
 		} else {
 			getDialog().dismiss();
-	
+
 			//		WhatAmIdoing waid  = (WhatAmIdoing) getActivity();
 			//		waid.sendEmail();
 		}
 		super.onStart();
-		
-		
+
+
 	}
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        //setStyle(DialogFragment.STYLE_NO_TITLE, R.style.accepted);
-        setStyle(DialogFragment.STYLE_NO_FRAME, android.R.style.Theme_Translucent);
-    }
-	
-    
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		//setStyle(DialogFragment.STYLE_NO_TITLE, R.style.accepted);
+		setStyle(DialogFragment.STYLE_NO_FRAME, android.R.style.Theme_Translucent);
+	}
+
+
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 			Bundle savedInstanceState) {
-		
-		
-		view = inflater.inflate(R.layout.invite, container);
 
-		
+
+		view = inflater.inflate(R.layout.invite, container);
+		invitelist = (ExpandableListView) view.findViewById(R.id.invite_list);
+
 		LayoutParams viewLayoutParams = new ViewGroup.LayoutParams(
-		        ViewGroup.LayoutParams.WRAP_CONTENT,
-		        ViewGroup.LayoutParams.WRAP_CONTENT);
+				ViewGroup.LayoutParams.WRAP_CONTENT,
+				ViewGroup.LayoutParams.WRAP_CONTENT);
 		Point size = UtilsWhatAmIdoing.getScreenSize(mContext);
-	
+
 		if (size !=  null) {
 			viewLayoutParams.height = (int)(size.y * 0.8);
 			view.setLayoutParams(viewLayoutParams);
@@ -121,23 +124,23 @@ public class InviteEmailFragment extends DialogFragment {
 			public void beforeTextChanged(CharSequence s, int start, int count,
 					int after) {
 				// TODO Auto-generated method stub
-				
+
 			}
 
 			@Override
 			public void onTextChanged(CharSequence s, int start, int before,
 					int count) {
 				List<Invite> original = expListAdapter.getOriginal();
-				
+
 				String filter = s.toString();
-				
+
 				List<Invite> invites = original;
 				if ((filter != null) && (filter.trim().length() > 1)) {
 					List<Invite> filtered = new ArrayList<Invite>();
 					for(Invite inv : original) {
-							if (inv.getEmail().contains(filter)) {
-								filtered.add(inv);
-							}
+						if (inv.getEmail().contains(filter)) {
+							filtered.add(inv);
+						}
 					}
 					invites = filtered;
 				} 
@@ -150,11 +153,11 @@ public class InviteEmailFragment extends DialogFragment {
 			@Override
 			public void afterTextChanged(Editable s) {
 				// TODO Auto-generated method stub
-				
+
 			}
-			
+
 		});
-		
+
 		Button inviteToView = (Button)view.findViewById(R.id.invite_to_view);
 		inviteToView.setOnClickListener(new View.OnClickListener() {
 
@@ -178,12 +181,12 @@ public class InviteEmailFragment extends DialogFragment {
 					emailEditText.requestFocus();
 
 				} else {
-					
+
 					String validEmail = null;	
 					if (pattern.matcher(email).matches()) {
 						validEmail = email;
 					}
-				
+
 					String inviteUrl = mContext.getString(R.string.send_invite_url);
 					Authentication auth =  DatabaseHandler.getInstance(mContext).getDefaultAuthentication();
 					String selected = null;
@@ -232,11 +235,7 @@ public class InviteEmailFragment extends DialogFragment {
 
 
 		ExpandableListView invitelist = (ExpandableListView) view.findViewById(R.id.invite_list);
-		Map<String, String> groupList = new HashMap<String, String>();
 		String[] values = inviteList.split(",");
-
-		LinkedHashMap<String, List<String>> invitelistCollection = new LinkedHashMap<String, List<String>>();
-
 
 		List<Invite> invites = new ArrayList<Invite>();
 		for(int i= 0; i < values.length; i++) {
@@ -258,35 +257,54 @@ public class InviteEmailFragment extends DialogFragment {
 
 			Invite in = new Invite(email,lastName,firstName);
 			invites.add(in);
-		
-		}
-		expListAdapter = new InviteListExpandableAdapter(mContext,invites,invites);
-		invitelist.setIndicatorBounds(0, 20);
-		invitelist.setAdapter(expListAdapter);
-		
-		LayoutParams viewLayoutParams = view.getLayoutParams();
-		Point size = UtilsWhatAmIdoing.getScreenSize(mContext);
-		viewLayoutParams.height = (int)(size.y * 0.9);
-		view.setLayoutParams(viewLayoutParams);
-		
-		GridLayout gl = (GridLayout) view.findViewById(R.id.invite_form);
-		LayoutParams glLayoutParams = gl.getLayoutParams();
-		glLayoutParams.height = (int)(size.y * 0.9);
-		gl.setLayoutParams(glLayoutParams);
-		
-		
-		ExpandableListView elv = (ExpandableListView) view.findViewById(R.id.invite_list);
-		 LayoutParams elvLayoutParams = elv.getLayoutParams();
-		elvLayoutParams.height = (int)(size.y * 0.55);
-		elv.setLayoutParams(elvLayoutParams);
-		
-		
-		view.requestLayout();
-		gl.requestLayout();
-		
-		elv.requestLayout();
-		
 
+		}
+		synchronized(inviteList) {
+			if (expListAdapter != null) {
+				invites.addAll(expListAdapter.getOriginal());
+			}
+			expListAdapter = new InviteListExpandableAdapter(mContext,invites,invites);
+			invitelist.setIndicatorBounds(0, 20);
+			invitelist.setAdapter(expListAdapter);
+			LayoutParams viewLayoutParams = view.getLayoutParams();
+			Point size = UtilsWhatAmIdoing.getScreenSize(mContext);
+			viewLayoutParams.height = (int)(size.y * 0.9);
+			view.setLayoutParams(viewLayoutParams);
+
+			GridLayout gl = (GridLayout) view.findViewById(R.id.invite_form);
+			LayoutParams glLayoutParams = gl.getLayoutParams();
+			glLayoutParams.height = (int)(size.y * 0.9);
+			gl.setLayoutParams(glLayoutParams);
+
+			ExpandableListView elv = (ExpandableListView) view.findViewById(R.id.invite_list);
+			LayoutParams elvLayoutParams = elv.getLayoutParams();
+			elvLayoutParams.height = (int)(size.y * 0.55);
+			elv.setLayoutParams(elvLayoutParams);
+			view.requestLayout();
+			gl.requestLayout();
+			elv.requestLayout();
+		}
+
+
+	}
+
+	public void populateContacts(List<Invite> invites) {
+
+		synchronized(invitelist) {
+			if (expListAdapter != null) {
+				List<Invite> original = expListAdapter.getOriginal();
+				Set<Invite> inv = new HashSet<Invite>();
+				inv.addAll(invites);
+				inv.addAll(original);
+				List<Invite> newInv = new ArrayList<Invite>();
+				newInv.addAll(inv);
+				expListAdapter = new InviteListExpandableAdapter(mContext,newInv,newInv);
+				invitelist.setAdapter(expListAdapter);
+				expListAdapter.notifyDataSetChanged();
+			} else {
+				expListAdapter = new InviteListExpandableAdapter(mContext,invites,invites);
+			}
+		}
 	}
 
 	public View getInviteForm() {

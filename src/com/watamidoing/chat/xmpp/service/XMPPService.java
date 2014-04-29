@@ -343,7 +343,7 @@ public class XMPPService extends Service implements PacketListener, XmppConnecti
 				}
 			}
 			
-			String m = "<bold><font color=\"blue\">"+from+"</font></bold>:"+mess.getBody();
+			String m = "<bold><font color=\"blue\">"+from+"</font></bold> : "+mess.getBody();
 			broadcastIntent.putExtra(XMPPConnectionController.CHAT_MESSAGE, m);
 		    	broadcastIntent.setAction(ChatMessageReceiver.MESSAGE_RECIEVED);
 		    	broadcastIntent.addCategory(Intent.CATEGORY_DEFAULT);

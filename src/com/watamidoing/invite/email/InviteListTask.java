@@ -19,6 +19,7 @@ import com.waid.R;
 import com.watamidoing.contentproviders.Authentication;
 import com.watamidoing.contentproviders.DatabaseHandler;
 import com.watamidoing.invite.email.callback.InviteDialogInteraction;
+import com.watamidoing.invite.email.task.ContactsListTask;
 import com.watamidoing.utils.ConnectionResult;
 import com.watamidoing.utils.HttpConnectionHelper;
 import com.watamidoing.view.WhatAmIdoing;
@@ -48,7 +49,8 @@ public class InviteListTask extends AsyncTask<Void, Void, Boolean> implements In
 
 	  	inviteEmailFragment = InviteEmailFragment.newInstance("Whos Watching?",context,this);
 		inviteEmailFragment.show(ft, "whoHasAcceptedFragment");
-
+		ContactsListTask contactsListTask = new ContactsListTask(context,inviteEmailFragment);
+		contactsListTask.execute((Void)null);
 		
 	}
 	

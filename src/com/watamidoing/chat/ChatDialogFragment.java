@@ -170,7 +170,7 @@ public class ChatDialogFragment extends DialogFragment {
 	}
 
 	public void addMessage(String message) {
-
+		
 		if (cma == null) {
 			if (pendingMessages == null)
 				pendingMessages = new LinkedList<String>();
