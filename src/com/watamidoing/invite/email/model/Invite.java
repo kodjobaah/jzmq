@@ -1,10 +1,13 @@
 package com.watamidoing.invite.email.model;
 
-public class Invite {
+import android.util.Log;
+
+public class Invite implements Comparable {
 	
 	private String firstName;
 	private String lastName;
 	private String email;
+	private String TAG ="Invite";
 	
 	public Invite(String email, String lastName, String firstName) {
 		this.email = email;
@@ -24,11 +27,18 @@ public class Invite {
 	}
 	
 	public int hashCode() {
-		return email.hashCode();
+		return email.trim().hashCode();
 	}
 
     public boolean equals(Invite invite) {
-    		return this.email.equalsIgnoreCase(invite.email);
+    		Log.i(TAG,"compairng ["+email+"] to ["+invite.email+"]");
+    		return this.email.trim().equalsIgnoreCase(invite.email.trim());
     }
+
+	@Override
+	public int compareTo(Object another) {
+		Invite other = (Invite)another;
+		return email.trim().toLowerCase().compareTo(other.email.trim().toLowerCase());
+	}
 	
 }

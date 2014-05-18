@@ -2,10 +2,13 @@ package com.watamidoing.view;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
+import org.opencv.android.OpenCVLoader;
 import org.scribe.model.Token;
 
 import twitter4j.auth.AccessToken;
@@ -121,7 +124,7 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 
 	private static final String VIDEO_SHARING_STATE = "waid-video-sharing-state";
 	private InviteListTask mInviteListTask;
-	private long startTime = 0;
+
 	private String startSharingState = START_SHARING;
 
 	private boolean videoStart = false;
@@ -195,10 +198,18 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 	private MenuItem whosAcceptedMenuItem;
 
 	public boolean cameraHasBeenStarted;
+	
+	static {
+	    if (!OpenCVLoader.initDebug()) {
+	        Log.i(TAG,"-------------------- UNABLE TO OPEN -- OPEN CV");
+	    }
+	}
+	
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 
+		
 		/*
 		WifiManager wifiManager = (WifiManager)this.getSystemService(Context.WIFI_SERVICE);
 		Log.i(TAG,"THIS IS THE LINK SPEED:"+wifiManager.getConnectionInfo().getLinkSpeed());
@@ -1267,7 +1278,6 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 	 PreviewCallback {
 
 		 private SurfaceHolder holder;
-		 long videoTimestamp = 0;
 
 		 Canvas canvas;
 
@@ -1278,7 +1288,11 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 		 private LinkedBlockingQueue<CameraViewData> dataQueue;
 
 
-		 class Consumer implements Runnable {
+
+		 class FrameConsumer implements Runnable {
+			 private int frameCounter=0;
+			 private Calendar start_time = null;
+			 int fps = 4;
 			 public void run() {
 				 try {
 					 while (true) {
@@ -1289,7 +1303,24 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 				 }
 			 }
 			 void consume(CameraViewData cameraViewData) {
-
+				 
+				 frameCounter++;
+				 if (start_time == null) {
+					 start_time = Calendar.getInstance();
+				 } else {
+					 Calendar currentTime =Calendar.getInstance();
+					 Log.i(TAG,"startTime:"+start_time.getTimeInMillis()+":current_time:"+currentTime.getTimeInMillis());
+					 
+					 Long diff = currentTime.getTimeInMillis() - start_time.getTimeInMillis();
+					 if (diff >  0) {
+					 fps = (int) Math.ceil(1000/diff);
+					 } else {
+						 fps = 4;
+					 }
+					 start_time = currentTime;
+					 
+				 }
+				 Log.i(TAG,"FPS:"+fps);
 				 Message msgObj = Message.obtain(imageHandler,
 						 ImageHandler.PUSH_MESSAGE_TO_QUEUE);
 				 Bundle b = new Bundle();
@@ -1299,6 +1330,7 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 				 b.putInt("previewFormat",cameraViewData.previewFormat);
 				 b.putInt("imageWidth", cameraViewData.imageWidth);
 				 b.putInt("imageHeight",cameraViewData.imageHeight);
+				 b.putInt("timeStamp",(int)(1000/fps));
 				 msgObj.setData(b);
 				 try {
 
@@ -1311,6 +1343,7 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 
 			 }
 		 }
+		 
 
 
 		 public CameraView(Context _context) {
@@ -1322,7 +1355,7 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 			 imageHandler = new ImageHandler(mService,_context);
 			 mMessenger= new Messenger(imageHandler);
 			 dataQueue = new LinkedBlockingQueue<CameraViewData>();
-			 Consumer consumer = new Consumer();
+			 FrameConsumer consumer = new FrameConsumer();
 			 new Thread(consumer).start();
 
 		 }
@@ -1477,6 +1510,7 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 
 
 
+			// camera.getParameters(
 
 			 // Log.i("WhatAmIDoing.CameraView.onPreview", "sharing["+
 			 // sharingStarted + "]");
@@ -1495,8 +1529,6 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 				 imageHandler.setMessageService(mService);
 				 Camera.Parameters parameters = camera.getParameters();
 				 Size size = parameters.getPreviewSize();
-
-				 videoTimestamp = 1000 * (System.currentTimeMillis() - startTime);
 
 				 // byte[] jdata = resizeImage(baos.toByteArray());
 				 CameraViewData cvd = new CameraViewData();

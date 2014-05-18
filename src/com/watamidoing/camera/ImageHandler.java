@@ -2,8 +2,10 @@ package com.watamidoing.camera;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.zip.GZIPOutputStream;
 
 import com.watamidoing.transport.service.WebsocketService;
@@ -44,9 +46,14 @@ public class ImageHandler extends Handler {
 
 	private ScriptIntrinsicYuvToRGB yuvToRgbIntrinsic;
 
+	private Bitmap oldImage;
+	
 	long start_time =0;
 	double difference =0;
 	private int count;
+	private int imageCount;
+	private int frameCounter = 0;
+	
 	public ImageHandler() {
 
 	}
@@ -56,7 +63,74 @@ public class ImageHandler extends Handler {
 		rs =  RenderScript.create(context);
 		count = 0;
 	}
+	
+	public Bitmap showDifference(Bitmap im1, Bitmap im2)
+    {
+        Bitmap resultImage =  Bitmap.createBitmap(im1.getWidth(), im1.getHeight(), Bitmap.Config.ARGB_8888);
 
+        
+        double THR = 50;
+        int area = 0;
+        for(int h=0; h < im1.getHeight(); h++)
+        {
+            for(int w=0; w < im1.getWidth(); w++)
+            {
+                    int pix1=0;
+                    int alpha1 = 0xff &(im1.getPixel(w, h)>>24);
+                    int red1 = 0xff &(im1.getPixel(w, h)>>16);
+                    int green1 = 0xff & (im1.getPixel(w, h)>>8);
+                    int blue1 = 0xff & im1.getPixel(w, h);  
+                    
+                    int pix2=0;
+                    int alpha2 = 0xff &(im2.getPixel(w, h)>>24);
+                    int red2 = 0xff &(im2.getPixel(w, h)>>16);
+                    int green2 = 0xff & (im2.getPixel(w, h)>>8);
+                    int blue2 = 0xff & im2.getPixel(w, h);  
+                    
+                    //euclidian distance to estimate the simil.
+                    double dist =0;
+                    dist = Math.sqrt(Math.pow((double)(red1-red2), 2.0) 
+                            +Math.pow((double)(green1-green2), 2.0)
+                            +Math.pow((double)(blue1-blue2), 2.0) );
+                    if(dist >THR)
+                    {
+                        resultImage.setPixel(w, h, im2.getPixel(w, h));
+                        area++;
+                    }
+                    else
+                    {
+                        resultImage.setPixel(w, h, 0);
+                    }
+            }
+        } 
+        return resultImage;
+    }
+
+	
+	public void saveBitmap(Bitmap bitmap) {
+	
+		
+		File sd = Environment.getExternalStorageDirectory();
+	    File file = new File(sd,"disp"+imageCount+".jpg");
+
+		OutputStream fOut = null;
+	        try {
+				fOut = new FileOutputStream(file);
+				 bitmap.compress(Bitmap.CompressFormat.JPEG, 85, fOut);
+			        fOut.flush();
+			        fOut.close();
+
+	        } catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+	  
+	}
+	
 	public Bitmap convertYuvToBitmap(byte[] yuv,int w, int h) {
 
 
@@ -138,6 +212,16 @@ public class ImageHandler extends Handler {
 
 			Bitmap b = BitmapFactory.decodeByteArray(jpegOutputStream.toByteArray(),0,jpegOutputStream.toByteArray().length);
 
+			/*
+			if (count < 10) {
+			if (oldImage == null) {
+				oldImage = b;
+			} else {
+				Bitmap diffImage = showDifference(oldImage, b);
+				saveBitmap(diffImage);
+			}
+			
+			}*/
 			// original measurements
 			int origWidth = b.getWidth();
 			int origHeight = b.getHeight();

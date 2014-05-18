@@ -1,13 +1,9 @@
 package com.watamidoing.invite.email;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
+import java.util.TreeSet;
 import java.util.regex.Pattern;
 
 import android.app.Activity;
@@ -22,7 +18,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
-import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
@@ -39,7 +34,6 @@ import com.watamidoing.invite.email.callback.InviteDialogInteraction;
 import com.watamidoing.invite.email.model.Invite;
 import com.watamidoing.tasks.SendInviteEmailTask;
 import com.watamidoing.utils.UtilsWhatAmIdoing;
-import com.watamidoing.view.WhatAmIdoing;
 
 public class InviteEmailFragment extends DialogFragment {
 
@@ -261,7 +255,11 @@ public class InviteEmailFragment extends DialogFragment {
 		}
 		synchronized(inviteList) {
 			if (expListAdapter != null) {
-				invites.addAll(expListAdapter.getOriginal());
+				Set<Invite> newInvites = new TreeSet<Invite>();
+				newInvites.addAll(invites);
+				newInvites.addAll(expListAdapter.getOriginal());
+				invites = new ArrayList<Invite>();
+				invites.addAll(newInvites);
 			}
 			expListAdapter = new InviteListExpandableAdapter(mContext,invites,invites);
 			invitelist.setIndicatorBounds(0, 20);
@@ -293,7 +291,7 @@ public class InviteEmailFragment extends DialogFragment {
 		synchronized(invitelist) {
 			if (expListAdapter != null) {
 				List<Invite> original = expListAdapter.getOriginal();
-				Set<Invite> inv = new HashSet<Invite>();
+				Set<Invite> inv = new TreeSet<Invite>();
 				inv.addAll(invites);
 				inv.addAll(original);
 				List<Invite> newInv = new ArrayList<Invite>();
