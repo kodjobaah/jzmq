@@ -47,13 +47,13 @@ public class ImageHandler extends Handler {
 	private ScriptIntrinsicYuvToRGB yuvToRgbIntrinsic;
 
 	private Bitmap oldImage;
-	
+
 	long start_time =0;
 	double difference =0;
 	private int count;
 	private int imageCount;
 	private int frameCounter = 0;
-	
+
 	public ImageHandler() {
 
 	}
@@ -63,74 +63,74 @@ public class ImageHandler extends Handler {
 		rs =  RenderScript.create(context);
 		count = 0;
 	}
-	
+
 	public Bitmap showDifference(Bitmap im1, Bitmap im2)
-    {
-        Bitmap resultImage =  Bitmap.createBitmap(im1.getWidth(), im1.getHeight(), Bitmap.Config.ARGB_8888);
+	{
+		Bitmap resultImage =  Bitmap.createBitmap(im1.getWidth(), im1.getHeight(), Bitmap.Config.ARGB_8888);
 
-        
-        double THR = 50;
-        int area = 0;
-        for(int h=0; h < im1.getHeight(); h++)
-        {
-            for(int w=0; w < im1.getWidth(); w++)
-            {
-                    int pix1=0;
-                    int alpha1 = 0xff &(im1.getPixel(w, h)>>24);
-                    int red1 = 0xff &(im1.getPixel(w, h)>>16);
-                    int green1 = 0xff & (im1.getPixel(w, h)>>8);
-                    int blue1 = 0xff & im1.getPixel(w, h);  
-                    
-                    int pix2=0;
-                    int alpha2 = 0xff &(im2.getPixel(w, h)>>24);
-                    int red2 = 0xff &(im2.getPixel(w, h)>>16);
-                    int green2 = 0xff & (im2.getPixel(w, h)>>8);
-                    int blue2 = 0xff & im2.getPixel(w, h);  
-                    
-                    //euclidian distance to estimate the simil.
-                    double dist =0;
-                    dist = Math.sqrt(Math.pow((double)(red1-red2), 2.0) 
-                            +Math.pow((double)(green1-green2), 2.0)
-                            +Math.pow((double)(blue1-blue2), 2.0) );
-                    if(dist >THR)
-                    {
-                        resultImage.setPixel(w, h, im2.getPixel(w, h));
-                        area++;
-                    }
-                    else
-                    {
-                        resultImage.setPixel(w, h, 0);
-                    }
-            }
-        } 
-        return resultImage;
-    }
 
-	
+		double THR = 50;
+		int area = 0;
+		for(int h=0; h < im1.getHeight(); h++)
+		{
+			for(int w=0; w < im1.getWidth(); w++)
+			{
+				int pix1=0;
+				int alpha1 = 0xff &(im1.getPixel(w, h)>>24);
+				int red1 = 0xff &(im1.getPixel(w, h)>>16);
+				int green1 = 0xff & (im1.getPixel(w, h)>>8);
+				int blue1 = 0xff & im1.getPixel(w, h);  
+
+				int pix2=0;
+				int alpha2 = 0xff &(im2.getPixel(w, h)>>24);
+				int red2 = 0xff &(im2.getPixel(w, h)>>16);
+				int green2 = 0xff & (im2.getPixel(w, h)>>8);
+				int blue2 = 0xff & im2.getPixel(w, h);  
+
+				//euclidian distance to estimate the simil.
+				double dist =0;
+				dist = Math.sqrt(Math.pow((double)(red1-red2), 2.0) 
+						+Math.pow((double)(green1-green2), 2.0)
+						+Math.pow((double)(blue1-blue2), 2.0) );
+				if(dist >THR)
+				{
+					resultImage.setPixel(w, h, im2.getPixel(w, h));
+					area++;
+				}
+				else
+				{
+					resultImage.setPixel(w, h, 0);
+				}
+			}
+		} 
+		return resultImage;
+	}
+
+
 	public void saveBitmap(Bitmap bitmap) {
-	
-		
+
+
 		File sd = Environment.getExternalStorageDirectory();
-	    File file = new File(sd,"disp"+imageCount+".jpg");
+		File file = new File(sd,"disp"+imageCount+".jpg");
 
 		OutputStream fOut = null;
-	        try {
-				fOut = new FileOutputStream(file);
-				 bitmap.compress(Bitmap.CompressFormat.JPEG, 85, fOut);
-			        fOut.flush();
-			        fOut.close();
+		try {
+			fOut = new FileOutputStream(file);
+			bitmap.compress(Bitmap.CompressFormat.JPEG, 85, fOut);
+			fOut.flush();
+			fOut.close();
 
-	        } catch (FileNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
-	  
+
 	}
-	
+
 	public Bitmap convertYuvToBitmap(byte[] yuv,int w, int h) {
 
 
@@ -179,136 +179,61 @@ public class ImageHandler extends Handler {
 		switch (msg.what) {
 		case PUSH_MESSAGE_TO_QUEUE:
 
+			byte[] byteframe = msg.getData().getByteArray("frame");
+			int timeStamp = msg.getData().getInt("timeStamp");
 
-			if (start_time == 0)
-				start_time = System.nanoTime();
-			else {
-				long end_time = System.nanoTime();
-				difference = (end_time - start_time)/1e6;
-				start_time = end_time;
-			}
-
-			Log.i(TAG,"This is how long it takes to process each frame["+difference+"]");
-			long measure_start = System.nanoTime();
-			byte[] uncompressedFrame = msg.getData().getByteArray("frame");
-			int previewFormat = msg.getData().getInt("previewFormat");
-			int width = msg.getData().getInt("width");
-			int height = msg.getData().getInt("height");
-			int imageWidth = msg.getData().getInt("imageWidth");
-			int imageHeight = msg.getData().getInt("imageHeight");
-
-			YuvImage image = new YuvImage(uncompressedFrame,
-					previewFormat, imageWidth, imageHeight,
-					null);
-
-
-			// Put the camera preview frame right into the yuvIplimage
-			// object
-			// yuvIplimage.getByteBuffer().put(data);
-			android.graphics.Rect previewRect = new android.graphics.Rect(
-					0, 0, imageWidth, imageHeight);
-			ByteArrayOutputStream jpegOutputStream = new ByteArrayOutputStream();
-			image.compressToJpeg(previewRect,100, jpegOutputStream);
-
-			Bitmap b = BitmapFactory.decodeByteArray(jpegOutputStream.toByteArray(),0,jpegOutputStream.toByteArray().length);
-
-			/*
-			if (count < 10) {
-			if (oldImage == null) {
-				oldImage = b;
-			} else {
-				Bitmap diffImage = showDifference(oldImage, b);
-				saveBitmap(diffImage);
-			}
-			
-			}*/
 			// original measurements
-			int origWidth = b.getWidth();
-			int origHeight = b.getHeight();
-
-			final int destWidth = 352;//or the width you need
-
-			ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 			byte[] frame = new byte[0];
-			if(origWidth > destWidth){
-				// picture is wider than we want it, we calculate its target height
-				// int destHeight = origHeight/( origWidth / destWidth ) ;
-				int destHeight = 288;
-				// we create an scaled bitmap so it reduces the image, not just trim it
-				Bitmap b2 = Bitmap.createScaledBitmap(b, destWidth, destHeight, false);
-
-				// compress to the format you want, JPEG, PNG... 
-				// 70 is the 0-100 quality percentage
-				b2.compress(Bitmap.CompressFormat.JPEG,compressionQuality , outStream);
-				/*
-			    if(count < 4) {
-			    			File sdCard = Environment.getExternalStorageDirectory();
-							File dir = new File (sdCard.getAbsolutePath() + "/waid");
-							dir.mkdirs();
-							File file = new File(dir, "filename"+count+".jpg");
-							try {
-			    FileOutputStream fo = new FileOutputStream(file);
-			    fo.write(outStream.toByteArray());
-			    fo.close();
-							} catch (Exception e) {
-								e.printStackTrace();
-							}
-			    		}
-				 */
-				frame = outStream.toByteArray();
-			} else {
-				frame = jpegOutputStream.toByteArray();	
-			}
+			frame = byteframe;	
 
 			//byte[] frame = jpegOutputStream.toByteArray();
 
 			String res = Base64.encodeToString(frame, Base64.DEFAULT);
 			Log.d(TAG,"SIZE BEFORE ENCODING:"+res.length());
-			if (res.length() > 8000) {
-				compressionQuality = compressionQuality - 2; 
-			} 
+			ByteArrayOutputStream rstBao = new ByteArrayOutputStream();
 
-
-			if (res.length() < 17000) {
-				ByteArrayOutputStream rstBao = new ByteArrayOutputStream();
-
-				GZIPOutputStream zos = null;
+			GZIPOutputStream zos = null;
+			try {
+				zos = new GZIPOutputStream(rstBao);
+				zos.write(res.getBytes());
+			} catch (IOException e) {
+				e.printStackTrace();
+			} finally {
 				try {
-					zos = new GZIPOutputStream(rstBao);
-					zos.write(res.getBytes());
+					zos.close();
 				} catch (IOException e) {
 					e.printStackTrace();
-				} finally {
-					try {
-						zos.close();
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
 				}
-
-
-				long measure_end = System.nanoTime();
-
-				double diff = (measure_end - measure_start)/1e6;
-				Log.i(TAG,"This how long it took to shrink["+diff+"]");
-				byte[] jdata = rstBao.toByteArray();
-
-				Message msgObj = Message.obtain(null,
-						WebsocketService.PUSH_MESSAGE_TO_QUEUE);
-				Bundle bundle = new Bundle();
-				bundle.putByteArray("frame", jdata);
-				msgObj.setData(bundle);
-				try {
-					if (mService != null)
-						mService.send(msgObj);
-				} catch (RemoteException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-
-			} else {
-				Log.i(TAG, "--DROPING FILE");
 			}
+
+			byte[] jdata = rstBao.toByteArray();
+
+			Message msgObj = Message.obtain(null,
+					WebsocketService.PUSH_MESSAGE_TO_QUEUE);
+			Bundle bundle = new Bundle();
+			
+			String frame64 = Base64.encodeToString(jdata,
+					Base64.DEFAULT)+":"+timeStamp;
+			bundle.putString("frame",frame64);
+			bundle.putInt("timeStamp", timeStamp);
+			msgObj.setData(bundle);
+			try {
+				if (mService != null)
+					mService.send(msgObj);
+			
+				rstBao = null;
+				jdata = null;
+				msgObj = null;
+				bundle = null;
+				frame64 = null;
+				frame=null;
+				byteframe=null;
+			} catch (RemoteException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+
 			Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 			break;
 		default:

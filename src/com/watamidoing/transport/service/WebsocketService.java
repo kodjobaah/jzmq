@@ -72,7 +72,7 @@ public class WebsocketService extends Service {
 
 	private static WebSocketConnection mConnection = null;
 
-	
+
 	/**
 	 * Handler of incoming messages from clients.
 	 */
@@ -95,42 +95,29 @@ public class WebsocketService extends Service {
 			switch (msg.what) {
 			case PUSH_MESSAGE_TO_QUEUE:
 
-			    if (start_time == 0)
-			    		start_time = System.nanoTime();
-			    else {
-			    	long end_time = System.nanoTime();
-			    	 difference = (end_time - start_time)/1e6;
-			    	start_time = end_time;
-			   }
 				if (mConnection != null) {
-					Boolean stopSelf = msg.getData().getBoolean("stopSelf");
-					if ((stopSelf != null) && (stopSelf.equals(true))) {
-						UtilsWhatAmIdoing.displayGenericToast(websocketService,
-								"receive message to stop service["+mConnection.isConnected());
-						mConnection.disconnect();
-						websocketService.stopSelf();
-						
-					} else {
+					System.gc();
+					//try {
+						String frame = msg.getData().getString("frame");
+						int diff = msg.getData().getInt("timeStamp");
 
-						byte[] frame = msg.getData().getByteArray("frame");
 						Log.d(TAG,
 								"------------------RECEIVED SHOUDL BE BEFORE COMPRESS TRANSMITTING----:"
-										+ frame.length+" DIFFERENCE TIME["+difference+"]");
-						String res = Base64.encodeToString(frame,
-								Base64.DEFAULT);
-
-						if (frame != null) {
-							if ((res != null) && (mConnection != null)) {
-
-								if (mConnection.isConnected()) {
-									mConnection.sendTextMessage(res+":"+(int)difference);
-								} else {
-									websocketService.stopSelf();
-								}
-							}
+										+ frame.length()+" DIFFERENCE TIME["+diff+"]");
+						if ((frame != null) && (mConnection != null) && mConnection.isConnected()) {
+							mConnection.sendTextMessage(frame);
+							frame = null;
+							msg = null;
+							System.gc();
+						} else {
+							websocketService.stopSelf();
 						}
-						Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
-					}
+					//} catch (Error error) {
+					//	Log.i(TAG,"-------------------- OUT OF MEMORY ---");
+			
+				//}
+					Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
+
 				}
 				break;
 			default:
@@ -178,7 +165,7 @@ public class WebsocketService extends Service {
 			//Use to forcible close the connection
 			//CloseConnectionTask dlt = new CloseConnectionTask(this);
 			//dlt.execute((Void)null);
-			
+
 
 			mConnection.disconnect();
 		}
@@ -317,7 +304,7 @@ public class WebsocketService extends Service {
 	protected void sendServiceConnectionCloseNotification() {
 		Intent broadcastIntent = new Intent();
 		broadcastIntent
-				.setAction(ServiceConnectionCloseReceiver.SERVICE_CONNECTION_CLOSED);
+		.setAction(ServiceConnectionCloseReceiver.SERVICE_CONNECTION_CLOSED);
 		broadcastIntent.addCategory(Intent.CATEGORY_DEFAULT);
 		// broadcastIntent.putExtra(PARAM_OUT_MSG, resultTxt);
 		sendBroadcast(broadcastIntent);

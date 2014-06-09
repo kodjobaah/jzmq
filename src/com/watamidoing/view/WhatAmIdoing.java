@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.opencv.android.BaseLoaderCallback;
+import org.opencv.android.LoaderCallbackInterface;
+import org.opencv.android.NativeCameraView;
 import org.opencv.android.OpenCVLoader;
 import org.scribe.model.Token;
 
@@ -131,7 +134,7 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 	private boolean videoSharing = false;
 	private int imageWidth = 320;
 	private int imageHeight = 240;
-	private CameraView cameraView;
+	private NativeCameraView cameraView;
 	/**
 	 * Class for interacting with the main interface of the service.
 	 */
@@ -198,6 +201,10 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 	private MenuItem whosAcceptedMenuItem;
 
 	public boolean cameraHasBeenStarted;
+
+	private OpenCvCameraListener opencvCameraListener;
+
+	private BaseLoaderCallback mLoaderCallback;
 	
 	static {
 	    if (!OpenCVLoader.initDebug()) {
@@ -210,6 +217,7 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 	public void onCreate(Bundle savedInstanceState) {
 
 		
+
 		/*
 		WifiManager wifiManager = (WifiManager)this.getSystemService(Context.WIFI_SERVICE);
 		Log.i(TAG,"THIS IS THE LINK SPEED:"+wifiManager.getConnectionInfo().getLinkSpeed());
@@ -271,6 +279,15 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 				.getScreenDimensions(activity);
 		ViewGroup.LayoutParams params = mainLayout.getLayoutParams();
 
+	
+		cameraView = (NativeCameraView)mainLayout.findViewById(R.id.opencvCameraView);
+		cameraView.enableFpsMeter();
+		opencvCameraListener = new OpenCvCameraListener();
+		opencvCameraListener.setCameraView(cameraView);
+		cameraView.setCvCameraViewListener(opencvCameraListener);
+		cameraView.setVisibility(SurfaceView.VISIBLE);
+		
+		
 		// change width of the params e.g. 50dp
 		params.width = Double.valueOf(dimension.getDpHeightPixels() * 0.8)
 				.intValue();
@@ -278,6 +295,25 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 				.intValue();
 		GridLayout gl = (GridLayout) this.findViewById(R.id.video_display);
 		gl.requestLayout();
+		
+		mLoaderCallback = new BaseLoaderCallback(this) {
+		    @Override
+		    public void onManagerConnected(int status) {
+		        switch (status) {
+		            case LoaderCallbackInterface.SUCCESS:
+		            {
+		                Log.i(TAG, "OpenCV loaded successfully");
+		              //  cameraView.enableView();
+		            } break;
+		            default:
+		            {
+		                super.onManagerConnected(status);
+		            } break;
+		        }
+		    }
+		};
+		cameraView.disableView();
+		cameraView.disableFpsMeter();
 
 	}
 
@@ -378,6 +414,10 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 		ImageButton startVideo = (ImageButton) activity
 				.findViewById(R.id.start_video);
 
+
+		cameraView.disableView();
+		
+		/*
 		if (camera != null) {
 			camera.stopPreview();
 		}
@@ -385,14 +425,15 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 		if (mainLayout != null) {
 			mainLayout.removeAllViews();
 		}
+		*/
 		//startVideo.setText(START_CAMERA);
 
 		if (startVideo != null) {
 			startVideo.setImageResource(R.drawable.camera);
 		}
-		cameraView = null;
+		//cameraView = null;
 		videoStart =wasVideoStarted;
-		camera = null;
+		//camera = null;
 	}
 
 	public void whoHasAccepted(View view) {
@@ -924,9 +965,7 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 	 public void onPause() {
 		 super.onPause();
 
-		 if (camera != null) {
-			 camera.stopPreview();
-		 }
+		 cameraView.disableView();
 		 Log.i(TAG, "Paused called");
 	 }
 
@@ -934,6 +973,8 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 	 public void onResume() {
 		 super.onResume();
 
+		 
+		 OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_9, this, mLoaderCallback);
 		 Log.i(TAG, "Resume called serviceRunning =["
 				 + isServiceRunning(WebsocketService.class.getName())
 				 + "] and share=[" + videoSharing + "] camera=["+videoStart+"]");
@@ -1063,12 +1104,14 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 				 sendLocationMenuItem.setEnabled(true);
 			 }
 			 if (cameraView != null) {
-				 cameraView.sharingHasStarted();
+				//TODO:
+				 //cameraView.sharingHasStarted();
 			 }
 			 videoSharing = true;
 			 this.mService = mService;
 			 startSharingState = STOP_SHARING;
 			 startTransmission.setImageResource(R.drawable.share_red);
+			 opencvCameraListener.createMessengerService(mService, this);
 		 } else {
 			 StopReceivers stopReceivers = new StopReceivers(activity,false);
 			 stopReceivers.run();
@@ -1129,9 +1172,10 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 
 
 			 unregisterAllReceivers();
-
+			 opencvCameraListener.disableMessengerService();
 			 if (cameraView != null) {
-				 cameraView.sharingHasStopepd();
+				//TODO
+				 //cameraView.sharingHasStopepd();
 			 }
 
 			 doUnbindService();
@@ -1244,7 +1288,7 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 
 	 private void startCamera() {
 
-		 if (cameraView == null) {
+		 if (cameraView != null ) {
 			 /*
 			  * Changing the size of the screen
 			  */
@@ -1259,9 +1303,11 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 			 imageHeight = params.height;
 			 imageWidth = params.width;
 
-			 cameraView = new CameraView(activity);
+			 //cameraView = new CameraView(activity);
 			 //mainLayout.addView(cameraView, layoutParam);
-			 mainLayout.addView(cameraView);
+			 //mainLayout.addView(cameraView);
+			 cameraView.enableView();
+			 cameraView.enableFpsMeter();
 			 videoStart = true;
 			 final ImageButton startVideo = (ImageButton) activity
 					 .findViewById(R.id.start_video);
@@ -1270,305 +1316,8 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 		 }
 
 		 if (videoSharing) {
-			 cameraView.sharingHasStarted();
-		 }
-	 }
-
-	 class CameraView extends SurfaceView implements SurfaceHolder.Callback,
-	 PreviewCallback {
-
-		 private SurfaceHolder holder;
-
-		 Canvas canvas;
-
-		 private volatile boolean sharingStarted;
-		 private ImageHandler imageHandler;
-		 private Messenger mMessenger;
-		 private long previewStart = 0;
-		 private LinkedBlockingQueue<CameraViewData> dataQueue;
-
-
-
-		 class FrameConsumer implements Runnable {
-			 private int frameCounter=0;
-			 private Calendar start_time = null;
-			 int fps = 4;
-			 public void run() {
-				 try {
-					 while (true) {
-						 consume(dataQueue.take()); 
-					 }
-				 } catch (InterruptedException ex) { 
-					 ex.printStackTrace();
-				 }
-			 }
-			 void consume(CameraViewData cameraViewData) {
-				 
-				 frameCounter++;
-				 if (start_time == null) {
-					 start_time = Calendar.getInstance();
-				 } else {
-					 Calendar currentTime =Calendar.getInstance();
-					 Log.i(TAG,"startTime:"+start_time.getTimeInMillis()+":current_time:"+currentTime.getTimeInMillis());
-					 
-					 Long diff = currentTime.getTimeInMillis() - start_time.getTimeInMillis();
-					 if (diff >  0) {
-					 fps = (int) Math.ceil(1000/diff);
-					 } else {
-						 fps = 4;
-					 }
-					 start_time = currentTime;
-					 
-				 }
-				 Log.i(TAG,"FPS:"+fps);
-				 Message msgObj = Message.obtain(imageHandler,
-						 ImageHandler.PUSH_MESSAGE_TO_QUEUE);
-				 Bundle b = new Bundle();
-				 b.putByteArray("frame", cameraViewData.data);
-				 b.putInt("width",cameraViewData.width);
-				 b.putInt("height", cameraViewData.height);
-				 b.putInt("previewFormat",cameraViewData.previewFormat);
-				 b.putInt("imageWidth", cameraViewData.imageWidth);
-				 b.putInt("imageHeight",cameraViewData.imageHeight);
-				 b.putInt("timeStamp",(int)(1000/fps));
-				 msgObj.setData(b);
-				 try {
-
-					 if (mMessenger != null)
-						 mMessenger.send(msgObj);
-				 } catch (RemoteException e) {
-					 // TODO Auto-generated catch block
-					 e.printStackTrace();
-				 }
-
-			 }
-		 }
-		 
-
-
-		 public CameraView(Context _context) {
-			 super(_context);
-
-			 holder = this.getHolder();
-			 holder.addCallback(this);
-
-			 imageHandler = new ImageHandler(mService,_context);
-			 mMessenger= new Messenger(imageHandler);
-			 dataQueue = new LinkedBlockingQueue<CameraViewData>();
-			 FrameConsumer consumer = new FrameConsumer();
-			 new Thread(consumer).start();
-
-		 }
-
-		 @Override
-		 public void surfaceCreated(SurfaceHolder holder) {
-			 Log.i(TAG, "cameraId [" + cameraId + "]");
-
-			 try {
-				 camera = Camera.open(cameraId);
-			 } catch (RuntimeException e) {
-				 e.printStackTrace();
-
-				 cameraId = Camera.getNumberOfCameras() - 1;
-				 camera = Camera.open(Camera.getNumberOfCameras() - 1);
-			 }
-
-			 setCameraDisplayOrientation(activity,cameraId, camera);
-
-			 try {
-
-				 camera.setPreviewDisplay(holder);
-				 camera.setPreviewCallback(this);
-
-				 Camera.Parameters currentParams = camera.getParameters();
-				 List<int[]> previewFpsRanges = currentParams.getSupportedPreviewFpsRange();
-
-				 int before = 0;
-				 /*
-				int [] requiredFps = new int[2];
-				for(int[] fps: previewFpsRanges){
-					Log.i(TAG,"-----fps[0]="+fps[0]+"-- fps[1]="+fps[1]);
-					if (before != 0) {
-						if ((10 > fps[0]) && (fps[1] >= 10))
-							requiredFps = fps;
-						break;
-					}
-
-				} */
-				 int[] requiredFps = previewFpsRanges.get(previewFpsRanges.size()-1);
-				 Log.i(TAG,"-----requiredFps[0]="+requiredFps[0]+"-- requiredFps[1]="+requiredFps[1]);
-				 currentParams.setPreviewFpsRange(requiredFps[0],requiredFps[1]);	
-				 Log.v(LOG_TAG,
-						 "Preview imageWidth: "
-								 + currentParams.getPreviewSize().width
-								 + " imageHeight: "
-								 + currentParams.getPreviewSize().height);
-
-				 currentParams.getPreviewSize().height = previewWindowHeight;
-				 // Use these values
-				 imageWidth = currentParams.getPreviewSize().width;
-				 imageHeight = currentParams.getPreviewSize().height;
-				 Log.v(LOG_TAG,"new PRVIEW HIGHT:"+imageHeight+" this is ["+previewWindowHeight+"]");
-
-				 //Hint to say the cameras' intended use is to record videos using MediaRecorder
-				 currentParams.setRecordingHint(true);
-
-				 camera.startPreview();
-
-			 } catch (IOException e) {
-				 Log.v(LOG_TAG, e.getMessage());
-				 e.printStackTrace();
-			 }
-
-		 }
-
-
-		 private Camera.Size getBestPreviewSize(int width, int height,
-				 Camera.Parameters parameters) {
-			 Camera.Size result=null;
-
-			 for (Camera.Size size : parameters.getSupportedPreviewSizes()) {
-				 if (size.width <= width && size.height <= height) {
-					 if (result == null) {
-						 result=size;
-					 }
-					 else {
-						 int resultArea=result.width * result.height;
-						 int newArea=size.width * size.height;
-
-						 if (newArea > resultArea) {
-							 result=size;
-						 }
-					 }
-				 }
-			 }
-
-			 return(result);
-		 }
-
-		 public void surfaceChanged(SurfaceHolder holder, int format, int width,
-				 int height) {
-			 Log.v(LOG_TAG, "Surface Changed: width " + width + " height: "
-					 + height);
-
-
-
-			 Display display = getWindowManager().getDefaultDisplay();
-			 Point size = new Point();
-			 display.getSize(size);
-			 int width1 = size.x;
-			 int height1 = size.y;
-
-			 Camera.Parameters parameters = camera.getParameters();
-			 // You need to choose the most appropriate previewSize for your app
-			 Camera.Size previewSize = getBestPreviewSize(width1, height1,parameters);
-			 parameters.setPreviewSize(previewSize.width, previewSize.height);
-			 requestLayout();
-			 camera.setParameters(parameters);
-
-
-
-			 // Important: Call startPreview() to start updating the preview surface.
-			 // Preview must be started before you can take a picture.
-
-			 // Get the current parameters
-			 Camera.Parameters currentParams = camera.getParameters();
-			 Log.v(LOG_TAG,
-					 "Preview imageWidth: "
-							 + currentParams.getPreviewSize().width
-							 + " imageHeight: "
-							 + currentParams.getPreviewSize().height);
-
-			 // Use these values
-			 imageWidth = currentParams.getPreviewSize().width;
-			 imageHeight = currentParams.getPreviewSize().height;
-			 /*
-			currentParams.setPreviewSize(currentParams.getPreviewSize().width,previewWindowHeight);
-		    requestLayout();
-		    camera.setParameters(currentParams);
-		    camera.startPreview();
-			  */
-
-
-			 camera.startPreview();
-
-		 }
-
-		 @Override
-		 public void surfaceDestroyed(SurfaceHolder holder) {
-			 if (camera != null) {
-				 camera.stopPreview();
-				 camera.setPreviewCallback(null);
-				 camera.release();
-				 camera = null;
-			 }
-			 Log.i(LOG_TAG, "onSurfaceDestroy");
-		 }
-
-		 @Override
-		 public void onPreviewFrame(byte[] data, Camera camera) {
-
-
-
-			// camera.getParameters(
-
-			 // Log.i("WhatAmIDoing.CameraView.onPreview", "sharing["+
-			 // sharingStarted + "]");
-			 if (sharingStarted) {
-				 double prevDifference = 0.0;
-				 if (previewStart == 0) {
-					 previewStart = System.nanoTime();
-				 } else {
-					 long endTime = System.nanoTime();
-					 prevDifference = (endTime - previewStart)/1e6;
-					 previewStart = endTime;
-				 }
-
-				 Log.i(TAG,"PREVIEW RATE:["+prevDifference+"]");
-
-				 imageHandler.setMessageService(mService);
-				 Camera.Parameters parameters = camera.getParameters();
-				 Size size = parameters.getPreviewSize();
-
-				 // byte[] jdata = resizeImage(baos.toByteArray());
-				 CameraViewData cvd = new CameraViewData();
-
-				 cvd.setFrame(data);
-				 cvd.setWidth(size.width);
-				 cvd.setHeight(size.height);
-				 cvd.setImageWidth(imageWidth);
-				 cvd.setImageHeight(imageHeight);
-				 cvd.setPreviewFromat(parameters.getPreviewFormat());
-				 dataQueue.add(cvd);
-				 // Log.i("WhatAmiDoing.CameraView.onPreview",
-				 // " transmit bytes["+ jdata.length + "]");
-				 // baos = null;
-
-			 }
-		 }
-
-		 byte[] resizeImage(byte[] input) {
-			 Bitmap original = BitmapFactory.decodeByteArray(input, 0,
-					 input.length);
-			 Camera.Parameters parameters = camera.getParameters();
-			 Size size = parameters.getPreviewSize();
-			 Log.i("WhatAmiDoing.CameraView.resizeImage", "original bitmap ["
-					 + original + "]");
-			 Bitmap resized = Bitmap.createScaledBitmap(original,
-					 size.width / 5, size.height / 5, true);
-
-			 ByteArrayOutputStream blob = new ByteArrayOutputStream();
-			 resized.compress(Bitmap.CompressFormat.JPEG, 100, blob);
-
-			 return blob.toByteArray();
-		 }
-
-		 public void sharingHasStarted() {
-			 sharingStarted = true;
-		 }
-
-		 public void sharingHasStopepd() {
-			 sharingStarted = false;
+			 //TODO
+			 //cameraView.sharingHasStarted();
 		 }
 	 }
 

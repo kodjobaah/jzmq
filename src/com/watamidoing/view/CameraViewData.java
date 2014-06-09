@@ -1,5 +1,7 @@
 package com.watamidoing.view;
 
+import org.opencv.core.Mat;
+
 public class CameraViewData {
 
 	public byte[] data;
@@ -8,6 +10,7 @@ public class CameraViewData {
 	public int imageWidth;
 	public int imageHeight;
 	public int previewFormat;
+	private Mat mat;
 
 	public void setFrame(byte[] data) {
 		this.data = data;
@@ -36,6 +39,15 @@ public class CameraViewData {
 
 	public void setPreviewFromat(int previewFormat) {
 		this.previewFormat = previewFormat;
+	}
+
+	public void setMat(Mat rgb) {
+		this.mat = rgb;
+		
+	}
+
+	public Mat getMat() {
+		return mat;
 	}
 
 }
