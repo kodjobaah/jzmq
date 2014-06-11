@@ -18,7 +18,7 @@ import android.util.Log;
 
 import com.watamidoing.reeiver.callbacks.TotalWatchersController;
 import com.watamidoing.total.receivers.TotalWatchersReceiver;
-import com.watamidoing.transport.service.WebsocketService;
+import com.watamidoing.transport.service.ZeroMQService;
 
 
 public class TotalWatchersService extends Service {
@@ -108,7 +108,7 @@ public class TotalWatchersService extends Service {
                 		sendTotalWatchers(message);
 				try {
 					Thread.sleep(3000);
-					if (isServiceRunning(WebsocketService.class.getName())) {
+					if (isServiceRunning(TotalWatchersService.class.getName())) {
 						getTotalUsersWatching();
 					} else {
 						totalWatchersService.stopSelf();

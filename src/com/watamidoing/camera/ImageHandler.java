@@ -8,7 +8,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.zip.GZIPOutputStream;
 
-import com.watamidoing.transport.service.WebsocketService;
+import com.waid.R;
+import com.watamidoing.tasks.ZeroMQTask;
+import com.watamidoing.transport.service.ZeroMQService;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -209,7 +211,7 @@ public class ImageHandler extends Handler {
 			byte[] jdata = rstBao.toByteArray();
 
 			Message msgObj = Message.obtain(null,
-					WebsocketService.PUSH_MESSAGE_TO_QUEUE);
+					ZeroMQService.PUSH_MESSAGE_TO_QUEUE);
 			Bundle bundle = new Bundle();
 			
 			String frame64 = Base64.encodeToString(jdata,
@@ -218,8 +220,11 @@ public class ImageHandler extends Handler {
 			bundle.putInt("timeStamp", timeStamp);
 			msgObj.setData(bundle);
 			try {
-				if (mService != null)
+				if (mService != null){
+					Log.d(TAG,"SENDING"+res.length());
+					//task.sendMessge(res);
 					mService.send(msgObj);
+				}
 			
 				rstBao = null;
 				jdata = null;

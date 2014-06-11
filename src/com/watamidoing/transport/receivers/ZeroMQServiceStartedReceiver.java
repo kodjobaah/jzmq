@@ -5,21 +5,21 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
-import com.watamidoing.reeiver.callbacks.WebsocketController;
+import com.watamidoing.reeiver.callbacks.ZeroMQController;
 
-public class ServiceStartedReceiver extends BroadcastReceiver {
+public class ZeroMQServiceStartedReceiver extends BroadcastReceiver {
 
 	public static final String SERVICE_STARTED = "com.whatamidoing.service.started";
-	private final WebsocketController websocketController;
+	private final ZeroMQController zeroMQController;
 	
-	public ServiceStartedReceiver(WebsocketController websocketController) {
-		this.websocketController = websocketController;
+	public ZeroMQServiceStartedReceiver(ZeroMQController zeroMQController) {
+		this.zeroMQController = zeroMQController;
 	}
 
 	@Override
 	public void onReceive(Context context, Intent intent) {
 		Log.i("ServiceStartedReceiver.onReceive","receved message");
-		websocketController.websocketConnectionCompleted(true);
+		zeroMQController.zeroMQServiceStarted(true);
 	}
 
 }

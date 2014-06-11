@@ -1,25 +1,25 @@
 package com.watamidoing.transport.receivers;
 
-import com.watamidoing.reeiver.callbacks.WebsocketController;
+import com.watamidoing.reeiver.callbacks.ZeroMQController;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
-public class ServiceConnectionCloseReceiver extends BroadcastReceiver {
+public class ZeroMQServiceConnectionCloseReceiver extends BroadcastReceiver {
 
 	public static final String SERVICE_CONNECTION_CLOSED = "com.whatamidoing.service.connection.close";
-	private WebsocketController websocketController;
+	private ZeroMQController zeroMQController;
 	
-	public ServiceConnectionCloseReceiver(WebsocketController websocketController) {
-		this.websocketController = websocketController;
+	public ZeroMQServiceConnectionCloseReceiver(ZeroMQController zeroMQController) {
+		this.zeroMQController = zeroMQController;
 	}
 	
 	@Override
 	public void onReceive(Context context, Intent intent) {
 		Log.i("ServiceConnectionCloseReceiver.onReceive","receved message");
-		websocketController.websocketServiceConnectionClose(true);
+		zeroMQController.zeroMQServiceConnectionClose(true);
 		
 	}
 

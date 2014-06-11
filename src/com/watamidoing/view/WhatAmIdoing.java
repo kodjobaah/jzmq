@@ -89,25 +89,25 @@ import com.watamidoing.invite.linkedin.SendLinkedInInviteTask;
 import com.watamidoing.invite.twitter.SendTwitterInviteTask;
 import com.watamidoing.invite.twitter.TwitterAuthorization;
 import com.watamidoing.reeiver.callbacks.TotalWatchersController;
-import com.watamidoing.reeiver.callbacks.WebsocketController;
+import com.watamidoing.reeiver.callbacks.ZeroMQController;
 import com.watamidoing.reeiver.callbacks.XMPPConnectionController;
 import com.watamidoing.tasks.WAIDLocationListener;
 import com.watamidoing.total.receivers.TotalWatchersReceiver;
 import com.watamidoing.total.service.TotalUsersWatchingTask;
 import com.watamidoing.total.service.TotalWatchersService;
 import com.watamidoing.transport.receivers.NetworkChangeReceiver;
-import com.watamidoing.transport.receivers.NotAbleToConnectReceiver;
-import com.watamidoing.transport.receivers.ServiceConnectionCloseReceiver;
-import com.watamidoing.transport.receivers.ServiceStartedReceiver;
-import com.watamidoing.transport.receivers.ServiceStoppedReceiver;
-import com.watamidoing.transport.service.WebsocketService;
-import com.watamidoing.transport.service.WebsocketServiceConnection;
+import com.watamidoing.transport.receivers.ZeroMQNotAbleToConnectReceiver;
+import com.watamidoing.transport.receivers.ZeroMQServiceConnectionCloseReceiver;
+import com.watamidoing.transport.receivers.ZeroMQServiceStartedReceiver;
+import com.watamidoing.transport.receivers.ZeroMQServiceStoppedReceiver;
+import com.watamidoing.transport.service.ZeroMQService;
+import com.watamidoing.transport.service.ZeroMQServiceConnection;
 import com.watamidoing.utils.Emoji;
 import com.watamidoing.utils.ScreenDimension;
 import com.watamidoing.utils.UtilsWhatAmIdoing;
 
 public class WhatAmIdoing extends FragmentActivity implements
-WebsocketController, XMPPConnectionController, TotalWatchersController {
+ZeroMQController, XMPPConnectionController, TotalWatchersController {
 
 	public static final Uri FRIEND_PICKER = Uri.parse("picker://friend");
 
@@ -139,15 +139,15 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 	 * Class for interacting with the main interface of the service.
 	 */
 	private ServiceConnection mConnection;
-	protected ServiceStartedReceiver serviceStartedReceiver;
-	protected ServiceStoppedReceiver serviceStoppedReceiver;
+	protected ZeroMQServiceStartedReceiver serviceStartedReceiver;
+	protected ZeroMQServiceStoppedReceiver serviceStoppedReceiver;
 	protected NetworkChangeReceiver networkChangeReceiver;
-	protected ServiceConnectionCloseReceiver serviceConnectionCloseReceiver;
+	protected ZeroMQServiceConnectionCloseReceiver serviceConnectionCloseReceiver;
 
 	protected boolean sharing = false;
 	private int cameraId;
 	private LinearLayout mainLayout;
-	private NotAbleToConnectReceiver notAbleToConnectReceiver;
+	private ZeroMQNotAbleToConnectReceiver notAbleToConnectReceiver;
 	private static volatile WhatAmIdoing activity;
 
 	/** Messenger for communicating with service. */
@@ -240,7 +240,7 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 			StrictMode.setThreadPolicy(policy);
 		}
 
-		mConnection = new WebsocketServiceConnection(this, this);
+		mConnection = new ZeroMQServiceConnection(this, this);
 		xmppServiceConnection = new XMPPServiceConnection(this, this);
 		setContentView(R.layout.options);
 		activity = this;
@@ -567,7 +567,7 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 
 				Intent msgIntent = new Intent(
 						activity,
-						com.watamidoing.transport.service.WebsocketService.class);
+						com.watamidoing.transport.service.ZeroMQService.class);
 
 				Intent totalWatchersIntent = new Intent(
 						activity,
@@ -596,10 +596,10 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 				}
 				if (notAbleToConnectReceiver == null) {
 					filterNotAbleToConnect = new IntentFilter(
-							NotAbleToConnectReceiver.NOT_ABLE_TO_CONNECT);
+							ZeroMQNotAbleToConnectReceiver.NOT_ABLE_TO_CONNECT);
 					filterNotAbleToConnect
 					.addCategory(Intent.CATEGORY_DEFAULT);
-					notAbleToConnectReceiver = new NotAbleToConnectReceiver(
+					notAbleToConnectReceiver = new ZeroMQNotAbleToConnectReceiver(
 							activity);
 
 					try {
@@ -614,10 +614,10 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 
 				if (serviceStartedReceiver == null) {
 					filterServiceStartedReciever = new IntentFilter(
-							ServiceStartedReceiver.SERVICE_STARTED);
+							ZeroMQServiceStartedReceiver.SERVICE_STARTED);
 					filterServiceStartedReciever
 					.addCategory(Intent.CATEGORY_DEFAULT);
-					serviceStartedReceiver = new ServiceStartedReceiver(
+					serviceStartedReceiver = new ZeroMQServiceStartedReceiver(
 							activity);
 					try {
 						unregisterReceiver(serviceStartedReceiver);
@@ -630,10 +630,10 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 
 				if (serviceStoppedReceiver == null) {
 					filterServiceStoppedReceiver = new IntentFilter(
-							ServiceStoppedReceiver.SERVICE_STOPED);
+							ZeroMQServiceStoppedReceiver.SERVICE_STOPED);
 					filterServiceStoppedReceiver
 					.addCategory(Intent.CATEGORY_DEFAULT);
-					serviceStoppedReceiver = new ServiceStoppedReceiver(
+					serviceStoppedReceiver = new ZeroMQServiceStoppedReceiver(
 							activity);
 					try {
 						unregisterReceiver(serviceStoppedReceiver);
@@ -646,10 +646,10 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 
 				if (serviceConnectionCloseReceiver == null) {
 					filterServiceConnectionCloseReceiver = new IntentFilter(
-							ServiceConnectionCloseReceiver.SERVICE_CONNECTION_CLOSED);
+							ZeroMQServiceConnectionCloseReceiver.SERVICE_CONNECTION_CLOSED);
 					filterServiceConnectionCloseReceiver
 					.addCategory(Intent.CATEGORY_DEFAULT);
-					serviceConnectionCloseReceiver = new ServiceConnectionCloseReceiver(
+					serviceConnectionCloseReceiver = new ZeroMQServiceConnectionCloseReceiver(
 							activity);
 
 					try {
@@ -690,7 +690,7 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 
 				Intent msgIntent = new Intent(
 						activity,
-						com.watamidoing.transport.service.WebsocketService.class);
+						com.watamidoing.transport.service.ZeroMQService.class);
 
 				Intent totalWatchersIntent = new Intent(
 						activity,
@@ -705,7 +705,7 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 					} else {
 						cameraHasBeenStarted = false;
 					}
-					if (isServiceRunning(WebsocketService.class.getName())) {
+					if (isServiceRunning(ZeroMQService.class.getName())) {
 						StopReceivers stopReceivers = new StopReceivers(
 								activity, false);
 						stopReceivers.run();
@@ -734,10 +734,10 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 					}
 					if (notAbleToConnectReceiver == null) {
 						filterNotAbleToConnect = new IntentFilter(
-								NotAbleToConnectReceiver.NOT_ABLE_TO_CONNECT);
+								ZeroMQNotAbleToConnectReceiver.NOT_ABLE_TO_CONNECT);
 						filterNotAbleToConnect
 						.addCategory(Intent.CATEGORY_DEFAULT);
-						notAbleToConnectReceiver = new NotAbleToConnectReceiver(
+						notAbleToConnectReceiver = new ZeroMQNotAbleToConnectReceiver(
 								activity);
 						registerReceiver(notAbleToConnectReceiver,
 								filterNotAbleToConnect);
@@ -745,10 +745,10 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 
 					if (serviceStartedReceiver == null) {
 						filterServiceStartedReciever = new IntentFilter(
-								ServiceStartedReceiver.SERVICE_STARTED);
+								ZeroMQServiceStartedReceiver.SERVICE_STARTED);
 						filterServiceStartedReciever
 						.addCategory(Intent.CATEGORY_DEFAULT);
-						serviceStartedReceiver = new ServiceStartedReceiver(
+						serviceStartedReceiver = new ZeroMQServiceStartedReceiver(
 								activity);
 						registerReceiver(serviceStartedReceiver,
 								filterServiceStartedReciever);
@@ -756,10 +756,10 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 
 					if (serviceStoppedReceiver == null) {
 						filterServiceStoppedReceiver = new IntentFilter(
-								ServiceStoppedReceiver.SERVICE_STOPED);
+								ZeroMQServiceStoppedReceiver.SERVICE_STOPED);
 						filterServiceStoppedReceiver
 						.addCategory(Intent.CATEGORY_DEFAULT);
-						serviceStoppedReceiver = new ServiceStoppedReceiver(
+						serviceStoppedReceiver = new ZeroMQServiceStoppedReceiver(
 								activity);
 						registerReceiver(serviceStoppedReceiver,
 								filterServiceStoppedReceiver);
@@ -767,10 +767,10 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 
 					if (serviceConnectionCloseReceiver == null) {
 						filterServiceConnectionCloseReceiver = new IntentFilter(
-								ServiceConnectionCloseReceiver.SERVICE_CONNECTION_CLOSED);
+								ZeroMQServiceConnectionCloseReceiver.SERVICE_CONNECTION_CLOSED);
 						filterServiceConnectionCloseReceiver
 						.addCategory(Intent.CATEGORY_DEFAULT);
-						serviceConnectionCloseReceiver = new ServiceConnectionCloseReceiver(
+						serviceConnectionCloseReceiver = new ZeroMQServiceConnectionCloseReceiver(
 								activity);
 						registerReceiver(serviceConnectionCloseReceiver,
 								filterServiceConnectionCloseReceiver);
@@ -838,10 +838,10 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 
 
 	 /**
-	  * Called from the websocket tasks
+	  * Called from the ZeroMQServiceStartedReceiver
 	  */
 	 @Override
-	 public void websocketConnectionCompleted(final boolean results) {
+	 public void zeroMQServiceStarted(final boolean results) {
 		 runOnUiThread(new Thread(new Runnable() {
 			 public void run() {
 				 if (!results) {
@@ -976,10 +976,10 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 		 
 		 OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_9, this, mLoaderCallback);
 		 Log.i(TAG, "Resume called serviceRunning =["
-				 + isServiceRunning(WebsocketService.class.getName())
+				 + isServiceRunning(ZeroMQService.class.getName())
 				 + "] and share=[" + videoSharing + "] camera=["+videoStart+"]");
 
-		 if (isServiceRunning(WebsocketService.class.getName())) {
+		 if (isServiceRunning(ZeroMQService.class.getName())) {
 			 callingFromResume = true;
 			 restartTransmission();
 		 }
@@ -991,7 +991,7 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 	 }
 
 	 @Override
-	 public void websocketProblems(final boolean result) {
+	 public void zeroMQProblems(final boolean result) {
 
 		 runOnUiThread(new Thread(new Runnable() {
 			 public void run() {
@@ -1010,7 +1010,7 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 	 }
 
 	 @Override
-	 public void websocketServiceStop(final boolean serviceStopped) {
+	 public void zeroMQServiceStop(final boolean serviceStopped) {
 		 runOnUiThread(new Thread(new Runnable() {
 			 public void run() {
 				 if (serviceStopped) {
@@ -1028,7 +1028,7 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 	 }
 
 	 @Override
-	 public void websocketServiceConnectionClose(final boolean connectionClose) {
+	 public void zeroMQServiceConnectionClose(final boolean connectionClose) {
 		 runOnUiThread(new Thread(new Runnable() {
 			 public void run() {
 
@@ -1071,7 +1071,7 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 		 .bindService(
 				 new Intent(
 						 getApplicationContext(),
-						 com.watamidoing.transport.service.WebsocketService.class),
+						 com.watamidoing.transport.service.ZeroMQService.class),
 						 mConnection,0);
 		 mIsBound = true;
 		 Log.i("WhatAmidoingCamera.doBindService", "binding to service");
@@ -1163,7 +1163,7 @@ WebsocketController, XMPPConnectionController, TotalWatchersController {
 
 
 			 Intent msgIntent = new Intent(activity,
-					 com.watamidoing.transport.service.WebsocketService.class);
+					 com.watamidoing.transport.service.ZeroMQService.class);
 			 activity.stopService(msgIntent);
 
 			 Intent totalWatchersIntent = new Intent(activity,

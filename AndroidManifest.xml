@@ -118,7 +118,7 @@
          <service
              android:launchMode="singleTask" 
              android:alwaysRetainTaskState="true"
-             android:name="com.watamidoing.transport.service.WebsocketService"
+             android:name="com.watamidoing.transport.service.ZeroMQService"
        	 	 android:process=":websocketservice" />
     
     </application>    

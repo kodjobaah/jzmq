@@ -1,6 +1,6 @@
 package com.watamidoing.transport.service;
 
-import com.watamidoing.reeiver.callbacks.WebsocketController;
+import com.watamidoing.reeiver.callbacks.ZeroMQController;
 import com.watamidoing.utils.UtilsWhatAmIdoing;
 
 import android.app.Activity;
@@ -10,12 +10,12 @@ import android.os.IBinder;
 import android.os.Messenger;
 import android.util.Log;
 
-public class WebsocketServiceConnection implements ServiceConnection{
+public class ZeroMQServiceConnection implements ServiceConnection{
 
 	private Activity activity;
-	private WebsocketController websocketController;
+	private ZeroMQController websocketController;
 
-	public WebsocketServiceConnection(Activity activity, WebsocketController websocketController) {
+	public ZeroMQServiceConnection(Activity activity, ZeroMQController websocketController) {
 		this.activity = activity;
 		this.websocketController = websocketController;
 	}

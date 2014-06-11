@@ -1,6 +1,6 @@
 package com.watamidoing.transport.receivers;
 
-import com.watamidoing.reeiver.callbacks.WebsocketController;
+import com.watamidoing.reeiver.callbacks.ZeroMQController;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -11,9 +11,9 @@ import android.util.Log;
 public class NetworkChangeReceiver extends BroadcastReceiver {
 
 	
-	private WebsocketController websocketController;
+	private ZeroMQController websocketController;
 	
-	public NetworkChangeReceiver(WebsocketController websocketController) {
+	public NetworkChangeReceiver(ZeroMQController websocketController) {
 		this.websocketController = websocketController;
 	}
 	

@@ -21,17 +21,20 @@ import android.util.Log;
 import com.waid.R;
 import com.watamidoing.contentproviders.Authentication;
 import com.watamidoing.contentproviders.DatabaseHandler;
-import com.watamidoing.transport.receivers.NotAbleToConnectReceiver;
-import com.watamidoing.transport.receivers.ServiceConnectionCloseReceiver;
-import com.watamidoing.transport.receivers.ServiceStartedReceiver;
-import com.watamidoing.transport.receivers.ServiceStoppedReceiver;
+import com.watamidoing.tasks.ZeroMQTask;
+import com.watamidoing.transport.receivers.ZeroMQNotAbleToConnectReceiver;
+import com.watamidoing.transport.receivers.ZeroMQServiceConnectionCloseReceiver;
+import com.watamidoing.transport.receivers.ZeroMQServiceStartedReceiver;
+import com.watamidoing.transport.receivers.ZeroMQServiceStoppedReceiver;
 import com.watamidoing.utils.UtilsWhatAmIdoing;
 
 import de.tavendo.autobahn.WebSocket.ConnectionHandler;
 import de.tavendo.autobahn.WebSocketConnection;
 import de.tavendo.autobahn.WebSocketException;
 
-public class WebsocketService extends Service {
+import org.zeromq.ZMQ;
+
+public class ZeroMQService extends Service {
 
 	NotificationManager nm;
 
@@ -68,54 +71,48 @@ public class WebsocketService extends Service {
 	 */
 	static final int MSG_SET_VALUE = 3;
 
-	private static final String TAG = "WebSocketService";
-
-	private static WebSocketConnection mConnection = null;
-
+	private static final String TAG = "ZeroMQService";
 
 	/**
 	 * Handler of incoming messages from clients.
 	 */
 	static class IncomingHandler extends Handler {
-		long start_time =0;
-		double difference =0;
+
+		long start_time = 0;
+		double difference = 0;
+		boolean connected = false;
 		static {
 			Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO);
 
 		}
 
-		private WebsocketService websocketService;
+		private ZeroMQTask task;
+		private ZeroMQService zeroMQService;
 
-		public IncomingHandler(WebsocketService websocketService) {
-			this.websocketService = websocketService;
+		public IncomingHandler(ZeroMQService zeroMQService) {
+			this.zeroMQService = zeroMQService;
+
+		}
+
+		public void connectToZeroMQ(String pUrl) {
+			task = new ZeroMQTask(pUrl,
+					zeroMQService.getAuthenticatonToken());
+			task.execute((Void) null);
+			connected = true;
 		}
 
 		@Override
 		public void handleMessage(Message msg) {
 			switch (msg.what) {
 			case PUSH_MESSAGE_TO_QUEUE:
-
-				if (mConnection != null) {
+				if (connected) {
 					System.gc();
-					//try {
-						String frame = msg.getData().getString("frame");
-						int diff = msg.getData().getInt("timeStamp");
-
-						Log.d(TAG,
-								"------------------RECEIVED SHOUDL BE BEFORE COMPRESS TRANSMITTING----:"
-										+ frame.length()+" DIFFERENCE TIME["+diff+"]");
-						if ((frame != null) && (mConnection != null) && mConnection.isConnected()) {
-							mConnection.sendTextMessage(frame);
-							frame = null;
-							msg = null;
-							System.gc();
-						} else {
-							websocketService.stopSelf();
-						}
-					//} catch (Error error) {
-					//	Log.i(TAG,"-------------------- OUT OF MEMORY ---");
-			
-				//}
+					String frame = msg.getData().getString("frame");
+					int diff = msg.getData().getInt("timeStamp");
+					task.sendMessge(frame, String.valueOf(diff));
+					frame = null;
+					msg = null;
+					System.gc();
 					Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 
 				}
@@ -127,56 +124,28 @@ public class WebsocketService extends Service {
 	}
 
 	/**
-	 * Class used for the client Binder. Because we know this service always
-	 * runs in the same process as its clients, we don't need to deal with IPC.
-	 */
-	public class LocalBinder extends Binder {
-		WebsocketService getService() {
-			// Return this instance of LocalService so clients can call public
-			// methods
-			return WebsocketService.this;
-		}
-	}
-
-	public WebsocketService() {
-	}
-
-	/**
 	 * Target we publish for clients to send messages to IncomingHandler.
 	 */
-	final Messenger mMessenger = new Messenger(new IncomingHandler(this));
+	IncomingHandler handler;
+	Messenger mMessenger;
 
 	@Override
 	public void onCreate() {
+		Log.d(TAG, "-------------- CREATE---------");
 		nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-		int res = createSockectContext();
-
+		String pUrl = this.getResources().getString(R.string.publish_url);
+		handler = new IncomingHandler(this);
+		mMessenger = new Messenger(handler);
+		handler.connectToZeroMQ(pUrl);
 	}
 
 	@Override
 	public void onDestroy() {
-		StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
-
-		StrictMode.setThreadPolicy(policy); 
 		super.onDestroy();
-		sendServiceStopNotification();
-		if ((mConnection != null) && (mConnection.isConnected())) {
-			mConnection.sendTextMessage("SERVICE_STOPPED");	
-			//Use to forcible close the connection
-			//CloseConnectionTask dlt = new CloseConnectionTask(this);
-			//dlt.execute((Void)null);
-
-
-			mConnection.disconnect();
-		}
-		mConnection = null;
 		setRunning(false);
-		// Cancel the persistent notification.
-		// mNM.cancel(R.string.remote_service_started);
-
-		// Tell the user we stopped.
-		// Toast.makeText(this, R.string.remote_service_stopped,
-		// Toast.LENGTH_SHORT).show();
+		if (handler != null) {
+			handler.task.disconnect();
+		}
 	}
 
 	/**
@@ -185,6 +154,7 @@ public class WebsocketService extends Service {
 	 */
 	@Override
 	public IBinder onBind(Intent intent) {
+		Log.d(TAG, "----------bingind---------");
 		return mMessenger.getBinder();
 	}
 
@@ -205,52 +175,6 @@ public class WebsocketService extends Service {
 		return Service.START_NOT_STICKY;
 	}
 
-	private void start(final String wsuri) {
-
-		try {
-
-			mConnection = new WebSocketConnection();
-			mConnection.connect(wsuri, new ConnectionHandler() {
-
-				@Override
-				public void onOpen() {
-					Log.i(TAG, "Status: Connected to " + wsuri);
-					// mConnection.sendTextMessage("Hello, world!");
-				}
-
-				@Override
-				public void onTextMessage(String payload) {
-
-					sendServiceStartedNotification();
-					Log.i(TAG, "Got echo: " + payload);
-				}
-
-				@Override
-				public void onClose(int code, String reason) {
-					sendServiceConnectionCloseNotification();
-					Log.i(TAG, "Connection lost.");
-					stopSelf();
-				}
-
-				@Override
-				public void onBinaryMessage(byte[] arg0) {
-					// TODO Auto-generated method stub
-
-				}
-
-				@Override
-				public void onRawTextMessage(byte[] arg0) {
-					// TODO Auto-generated method stub
-
-				}
-			});
-		} catch (WebSocketException e) {
-			sendNotAbleToConnectNotification();
-			stopSelf();
-			Log.i(TAG, e.toString());
-		}
-	}
-
 	private void setRunning(boolean running) {
 		// SharedPreferences pref =
 		// PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
@@ -265,38 +189,30 @@ public class WebsocketService extends Service {
 		return isRunning;
 	}
 
-	private int createSockectContext() {
-
+	private String getAuthenticatonToken() {
 		Authentication auth = DatabaseHandler.getInstance(this)
 				.getDefaultAuthentication();
-		String pUrl = this.getResources().getString(R.string.publish_url);
-		String pubUrl = pUrl + "?token=" + auth.getToken();
-		start(pubUrl);
-		return 1;
-
+		return auth.getToken();
 	}
 
 	private void sendNotAbleToConnectNotification() {
 		Intent broadcastIntent = new Intent();
-		broadcastIntent.setAction(NotAbleToConnectReceiver.NOT_ABLE_TO_CONNECT);
+		broadcastIntent.setAction(ZeroMQNotAbleToConnectReceiver.NOT_ABLE_TO_CONNECT);
 		broadcastIntent.addCategory(Intent.CATEGORY_DEFAULT);
-		// broadcastIntent.putExtra(PARAM_OUT_MSG, resultTxt);
 		sendBroadcast(broadcastIntent);
 	}
 
 	private void sendServiceStartedNotification() {
 		Intent broadcastIntent = new Intent();
-		broadcastIntent.setAction(ServiceStartedReceiver.SERVICE_STARTED);
+		broadcastIntent.setAction(ZeroMQServiceStartedReceiver.SERVICE_STARTED);
 		broadcastIntent.addCategory(Intent.CATEGORY_DEFAULT);
-		// broadcastIntent.putExtra(PARAM_OUT_MSG, resultTxt);
 		sendBroadcast(broadcastIntent);
 	}
 
 	protected void sendServiceStopNotification() {
 		Intent broadcastIntent = new Intent();
-		broadcastIntent.setAction(ServiceStoppedReceiver.SERVICE_STOPED);
+		broadcastIntent.setAction(ZeroMQServiceStoppedReceiver.SERVICE_STOPED);
 		broadcastIntent.addCategory(Intent.CATEGORY_DEFAULT);
-		// broadcastIntent.putExtra(PARAM_OUT_MSG, resultTxt);
 		sendBroadcast(broadcastIntent);
 
 	}
@@ -304,9 +220,8 @@ public class WebsocketService extends Service {
 	protected void sendServiceConnectionCloseNotification() {
 		Intent broadcastIntent = new Intent();
 		broadcastIntent
-		.setAction(ServiceConnectionCloseReceiver.SERVICE_CONNECTION_CLOSED);
+				.setAction(ZeroMQServiceConnectionCloseReceiver.SERVICE_CONNECTION_CLOSED);
 		broadcastIntent.addCategory(Intent.CATEGORY_DEFAULT);
-		// broadcastIntent.putExtra(PARAM_OUT_MSG, resultTxt);
 		sendBroadcast(broadcastIntent);
 
 	}
