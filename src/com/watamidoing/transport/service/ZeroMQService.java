@@ -2,37 +2,27 @@ package com.watamidoing.transport.service;
 
 import java.util.ArrayList;
 
+import org.zeromq.ZMQ;
+
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Binder;
+import android.database.sqlite.SQLiteCantOpenDatabaseException;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.Process;
-import android.os.StrictMode;
 import android.support.v4.app.NotificationCompat;
-import android.util.Base64;
 import android.util.Log;
 
 import com.waid.R;
 import com.watamidoing.contentproviders.Authentication;
 import com.watamidoing.contentproviders.DatabaseHandler;
-import com.watamidoing.tasks.ZeroMQTask;
-import com.watamidoing.transport.receivers.ZeroMQNotAbleToConnectReceiver;
-import com.watamidoing.transport.receivers.ZeroMQServiceConnectionCloseReceiver;
-import com.watamidoing.transport.receivers.ZeroMQServiceStartedReceiver;
 import com.watamidoing.transport.receivers.ZeroMQServiceStoppedReceiver;
-import com.watamidoing.utils.UtilsWhatAmIdoing;
-
-import de.tavendo.autobahn.WebSocket.ConnectionHandler;
-import de.tavendo.autobahn.WebSocketConnection;
-import de.tavendo.autobahn.WebSocketException;
-
-import org.zeromq.ZMQ;
+import com.watamidoing.zeromq.tasks.ZeroMQTask;
 
 public class ZeroMQService extends Service {
 
@@ -45,6 +35,7 @@ public class ZeroMQService extends Service {
 	/** Holds last value set by a client. */
 	int mValue = 0;
 
+	static Boolean transmit = true;
 	/**
 	 * Command to service to push message
 	 */
@@ -78,6 +69,7 @@ public class ZeroMQService extends Service {
 	 */
 	static class IncomingHandler extends Handler {
 
+
 		long start_time = 0;
 		double difference = 0;
 		boolean connected = false;
@@ -88,15 +80,28 @@ public class ZeroMQService extends Service {
 
 		private ZeroMQTask task;
 		private ZeroMQService zeroMQService;
+		private org.zeromq.ZMQ.Context context;
 
 		public IncomingHandler(ZeroMQService zeroMQService) {
 			this.zeroMQService = zeroMQService;
 
 		}
 
+		public void terminateContext() {
+			task.waitForSocketToBeClose();
+			//try {
+			Log.d(TAG,"TERMINATING CONTEDXT");
+			  //context.close();
+			  //context.term();
+			  Log.d(TAG,"Able to terminat Context");
+			//} catch (IllegalStateException ise) {
+			//	Log.e(TAG,ise.getMessage());
+			//}
+		}
 		public void connectToZeroMQ(String pUrl) {
+			context = ZMQ.context(1);
 			task = new ZeroMQTask(pUrl,
-					zeroMQService.getAuthenticatonToken());
+					zeroMQService.getAuthenticatonToken(),context);
 			task.execute((Void) null);
 			connected = true;
 		}
@@ -109,10 +114,22 @@ public class ZeroMQService extends Service {
 					System.gc();
 					String frame = msg.getData().getString("frame");
 					int diff = msg.getData().getInt("timeStamp");
-					task.sendMessge(frame, String.valueOf(diff));
-					frame = null;
-					msg = null;
-					System.gc();
+					synchronized (transmit) {
+						boolean result = false;
+						if (transmit) {
+							Log.d(TAG,"Transmitting");
+							result = task.sendMessge(frame, String.valueOf(diff));
+						}
+						frame = null;
+						msg = null;
+						System.gc();
+						if (!result) {
+							transmit = false;
+							Log.d(TAG,"Unable to send message should be ending service");
+							zeroMQService.sendServiceStopNotification();
+						}
+	
+					}
 					Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 
 				}
@@ -136,16 +153,42 @@ public class ZeroMQService extends Service {
 		String pUrl = this.getResources().getString(R.string.publish_url);
 		handler = new IncomingHandler(this);
 		mMessenger = new Messenger(handler);
-		handler.connectToZeroMQ(pUrl);
+		
+		try {
+			handler.connectToZeroMQ(pUrl);
+			if (!handler.task.initialize()) {
+				sendServiceStopNotification();
+			}
+		} catch(SQLiteCantOpenDatabaseException ex) {
+			Log.d(TAG,ex.getMessage());
+			sendServiceStopNotification();
+		}
+		
+		
 	}
 
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
 		setRunning(false);
+		Log.d(TAG,"DESTROYING:"+handler);
 		if (handler != null) {
-			handler.task.disconnect();
+			boolean hasMessages = handler.hasMessages(PUSH_MESSAGE_TO_QUEUE);
+			if (hasMessages) {
+				Log.d(TAG,"has messages removing");
+				handler.removeMessages(PUSH_MESSAGE_TO_QUEUE);
+			}
+			if (transmit) {
+				handler.task.disconnect();
+				handler.terminateContext();
+			}else {
+				handler.task.cancel(true);
+				handler.task = null;
+			}
+			mMessenger = null;
+			handler = null;
 		}
+		Log.d(TAG,"Returning from destory");
 	}
 
 	/**
@@ -195,20 +238,6 @@ public class ZeroMQService extends Service {
 		return auth.getToken();
 	}
 
-	private void sendNotAbleToConnectNotification() {
-		Intent broadcastIntent = new Intent();
-		broadcastIntent.setAction(ZeroMQNotAbleToConnectReceiver.NOT_ABLE_TO_CONNECT);
-		broadcastIntent.addCategory(Intent.CATEGORY_DEFAULT);
-		sendBroadcast(broadcastIntent);
-	}
-
-	private void sendServiceStartedNotification() {
-		Intent broadcastIntent = new Intent();
-		broadcastIntent.setAction(ZeroMQServiceStartedReceiver.SERVICE_STARTED);
-		broadcastIntent.addCategory(Intent.CATEGORY_DEFAULT);
-		sendBroadcast(broadcastIntent);
-	}
-
 	protected void sendServiceStopNotification() {
 		Intent broadcastIntent = new Intent();
 		broadcastIntent.setAction(ZeroMQServiceStoppedReceiver.SERVICE_STOPED);
@@ -216,14 +245,4 @@ public class ZeroMQService extends Service {
 		sendBroadcast(broadcastIntent);
 
 	}
-
-	protected void sendServiceConnectionCloseNotification() {
-		Intent broadcastIntent = new Intent();
-		broadcastIntent
-				.setAction(ZeroMQServiceConnectionCloseReceiver.SERVICE_CONNECTION_CLOSED);
-		broadcastIntent.addCategory(Intent.CATEGORY_DEFAULT);
-		sendBroadcast(broadcastIntent);
-
-	}
-
 }

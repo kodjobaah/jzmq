@@ -115,7 +115,7 @@
             android:name="com.watamidoing.chat.xmpp.service.XMPPService"
             android:process=":xmppservice"/>
                                       
-         <service
+         <service 
              android:launchMode="singleTask" 
              android:alwaysRetainTaskState="true"
              android:name="com.watamidoing.transport.service.ZeroMQService"
