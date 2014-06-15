@@ -12,7 +12,7 @@ import android.os.Process;
 import android.os.StrictMode;
 import android.util.Log;
 
-public class ZeroMQTask extends AsyncTask<Void, Void, Boolean> {
+public class ZeroMQTransportTask extends AsyncTask<Void, Void, Boolean> {
 
 	private DataConsumer<List<String>> dataToProcess = new DataConsumer<List<String>>(100);
 	private static final String END_STREAM = "END_STREAM";
@@ -38,7 +38,7 @@ public class ZeroMQTask extends AsyncTask<Void, Void, Boolean> {
 	private PollingResponse pollingResponse;
 	private Boolean socketClosed =false;
 
-	public ZeroMQTask(String pUrl, String token, ZMQ.Context context) {
+	public ZeroMQTransportTask(String pUrl, String token, ZMQ.Context context) {
 		StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
 				.permitAll().build();
 		StrictMode.setThreadPolicy(policy);

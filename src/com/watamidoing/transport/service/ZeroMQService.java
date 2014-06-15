@@ -22,7 +22,7 @@ import com.waid.R;
 import com.watamidoing.contentproviders.Authentication;
 import com.watamidoing.contentproviders.DatabaseHandler;
 import com.watamidoing.transport.receivers.ZeroMQServiceStoppedReceiver;
-import com.watamidoing.zeromq.tasks.ZeroMQTask;
+import com.watamidoing.zeromq.tasks.ZeroMQTransportTask;
 
 public class ZeroMQService extends Service {
 
@@ -78,7 +78,7 @@ public class ZeroMQService extends Service {
 
 		}
 
-		private ZeroMQTask task;
+		private ZeroMQTransportTask task;
 		private ZeroMQService zeroMQService;
 		private org.zeromq.ZMQ.Context context;
 
@@ -100,7 +100,7 @@ public class ZeroMQService extends Service {
 		}
 		public void connectToZeroMQ(String pUrl) {
 			context = ZMQ.context(1);
-			task = new ZeroMQTask(pUrl,
+			task = new ZeroMQTransportTask(pUrl,
 					zeroMQService.getAuthenticatonToken(),context);
 			task.execute((Void) null);
 			connected = true;

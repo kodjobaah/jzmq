@@ -10,7 +10,7 @@ import java.util.zip.GZIPOutputStream;
 
 import com.waid.R;
 import com.watamidoing.transport.service.ZeroMQService;
-import com.watamidoing.zeromq.tasks.ZeroMQTask;
+import com.watamidoing.zeromq.tasks.ZeroMQTransportTask;
 
 import android.content.Context;
 import android.graphics.Bitmap;
