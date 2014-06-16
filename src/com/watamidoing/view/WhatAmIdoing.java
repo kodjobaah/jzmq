@@ -662,9 +662,20 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 					 * startWebSocketTask.execute((Void) null);
 					 */
 					// startTransmission.setText(STOP_SHARING);
-					startTransmission.setEnabled(false);
-					startTransmission.setImageResource(R.drawable.share_red);
-					doBindService();
+					
+					if (doBindService()) {
+						startTransmission.setEnabled(false);
+						startTransmission.setImageResource(R.drawable.share_red);	
+					} else {
+						StopReceivers stopReceivers = new StopReceivers(activity,
+								false);
+						stopReceivers.run();
+						videoSharing = false;
+						startSharingState = START_SHARING;
+						startTransmission.setEnabled(true);
+						startTransmission.setImageResource(R.drawable.share_blue);
+						UtilsWhatAmIdoing.displayGenericToast(activity,"Problems binding to service");
+					}
 				} else {
 					StopReceivers stopReceivers = new StopReceivers(activity,
 							false);
@@ -905,16 +916,22 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 		 */
 	}
 
-	public void doBindService() {
+	public boolean doBindService() {
 		// Establish a connection with the service. We use an explicit
 		// class name because there is no reason to be able to let other
 		// applications replace our component.
-		getApplicationContext().bindService(
+		boolean bound = getApplicationContext().bindService(
 				new Intent(getApplicationContext(),
 						com.watamidoing.transport.service.ZeroMQService.class),
 				zeroMQServiceConnection, 0);
-		mIsBound = true;
-		Log.i("WhatAmidoingCamera.doBindService", "binding to service");
+		
+		if (bound) {
+			mIsBound = true;
+			Log.d("WhatAmidoingCamera.doBindService", "binding to service");
+		} else {
+			Log.d("WhatAmidoingCamera.doBindService", "Uable binding to service");	
+		}
+		return bound;
 
 	}
 

@@ -12,4 +12,4 @@ include  C:\Users\whatamidoing\hey\whatamidoingffmpeg\jni\zeromq\Android.mk
 
 
 include $(CLEAR_VARS)
-include  C:\Users\whatamidoing\hey\whatamidoingffmpeg\jni\jzmq\src\main\c++\Android.mk
+include  C:\Users\whatamidoing\hey\whatamidoingffmpeg\jni\jzmq\Android.mk

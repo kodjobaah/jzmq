@@ -8,30 +8,23 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.zip.GZIPOutputStream;
 
-import com.waid.R;
-import com.watamidoing.transport.service.ZeroMQService;
-import com.watamidoing.zeromq.tasks.ZeroMQTransportTask;
-
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.Bitmap.CompressFormat;
-import android.graphics.BitmapFactory;
-import android.graphics.BitmapShader;
-import android.graphics.ImageFormat;
-import android.graphics.YuvImage;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
-import android.util.Base64;
-import android.util.Log;
 import android.support.v8.renderscript.Allocation;
 import android.support.v8.renderscript.Element;
 import android.support.v8.renderscript.RenderScript;
 import android.support.v8.renderscript.ScriptIntrinsicYuvToRGB;
 import android.support.v8.renderscript.Type;
+import android.util.Base64;
+import android.util.Log;
+
+import com.watamidoing.transport.service.ZeroMQService;
 
 public class ImageHandler extends Handler {
 
@@ -220,6 +213,7 @@ public class ImageHandler extends Handler {
 				if (mService != null){
 					
 					//task.sendMessge(res);
+					
 					mService.send(msgObj);
 					Log.d(TAG,"SENT:"+res.length());
 				}

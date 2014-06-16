@@ -54,14 +54,14 @@ public class TotalUsersWatchingTask extends AsyncTask<Void, Void, Boolean> {
 						&& (connectionResult.getStatusCode() == HttpURLConnection.HTTP_OK)) {
 					String result = connectionResult.getResult();
 					int myNum = 0;
-
+					String message = context.getString(R.string.total_views_message);
 					try {
 						myNum = Integer.parseInt(result);
-						String message = context.getString(R.string.total_views_message);
 						watchers = message+" " + myNum + " ";
 
 					} catch (NumberFormatException nfe) {
-						nfe.printStackTrace(); // Handle parse error.
+						Log.e(TAG,nfe.getMessage()); // Handle parse error.
+						watchers = message+" " + myNum + " ";
 					}
 
 				}

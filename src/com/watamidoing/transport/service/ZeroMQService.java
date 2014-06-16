@@ -22,7 +22,7 @@ import com.waid.R;
 import com.watamidoing.contentproviders.Authentication;
 import com.watamidoing.contentproviders.DatabaseHandler;
 import com.watamidoing.transport.receivers.ZeroMQServiceStoppedReceiver;
-import com.watamidoing.zeromq.tasks.ZeroMQTransportTask;
+import com.watamidoing.transport.zeromq.tasks.ZeroMQTransportTask;
 
 public class ZeroMQService extends Service {
 
@@ -78,7 +78,7 @@ public class ZeroMQService extends Service {
 
 		}
 
-		private ZeroMQTransportTask task;
+		private ZeroMQHandler task;
 		private ZeroMQService zeroMQService;
 		private org.zeromq.ZMQ.Context context;
 
@@ -92,7 +92,7 @@ public class ZeroMQService extends Service {
 			//try {
 			Log.d(TAG,"TERMINATING CONTEDXT");
 			  //context.close();
-			  //context.term();
+			  context.term();
 			  Log.d(TAG,"Able to terminat Context");
 			//} catch (IllegalStateException ise) {
 			//	Log.e(TAG,ise.getMessage());
@@ -100,9 +100,9 @@ public class ZeroMQService extends Service {
 		}
 		public void connectToZeroMQ(String pUrl) {
 			context = ZMQ.context(1);
-			task = new ZeroMQTransportTask(pUrl,
+			task = new ZeroMQHandler(pUrl,
 					zeroMQService.getAuthenticatonToken(),context);
-			task.execute((Void) null);
+			task.start();
 			connected = true;
 		}
 
@@ -125,6 +125,8 @@ public class ZeroMQService extends Service {
 						System.gc();
 						if (!result) {
 							transmit = false;
+							this.getLooper().quit();
+							terminateContext();
 							Log.d(TAG,"Unable to send message should be ending service");
 							zeroMQService.sendServiceStopNotification();
 						}
@@ -179,10 +181,9 @@ public class ZeroMQService extends Service {
 				handler.removeMessages(PUSH_MESSAGE_TO_QUEUE);
 			}
 			if (transmit) {
-				handler.task.disconnect();
 				handler.terminateContext();
 			}else {
-				handler.task.cancel(true);
+				handler.task.quitLooper();
 				handler.task = null;
 			}
 			mMessenger = null;
