@@ -141,7 +141,6 @@ public class OpenCvCameraListener implements CvCameraViewListener2 {
 	public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
 
 		CameraViewData cvd = new CameraViewData();
-
 		Mat rgb = inputFrame.rgba();
 		if ((rgb != null) && (rgb.width() > 0) && (rgb.height() > 0)) {
 			cvd.setMat(rgb);

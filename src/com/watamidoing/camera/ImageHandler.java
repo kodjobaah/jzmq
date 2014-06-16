@@ -56,9 +56,6 @@ public class ImageHandler extends Handler {
 	private int imageCount;
 	private int frameCounter = 0;
 
-	public ImageHandler() {
-
-	}
 	public ImageHandler(Messenger mService, Context context) {
 		this.mService = mService;
 		this.context = context;
@@ -221,9 +218,10 @@ public class ImageHandler extends Handler {
 			msgObj.setData(bundle);
 			try {
 				if (mService != null){
-					Log.d(TAG,"SENDING"+res.length());
+					
 					//task.sendMessge(res);
 					mService.send(msgObj);
+					Log.d(TAG,"SENT:"+res.length());
 				}
 			
 				rstBao = null;

@@ -7,6 +7,8 @@ import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.PollItem;
 import org.zeromq.ZMQ.Poller;
 
+import com.watamidoing.value.FrameData;
+
 import android.os.AsyncTask;
 import android.os.Process;
 import android.os.StrictMode;
@@ -14,7 +16,7 @@ import android.util.Log;
 
 public class ZeroMQTransportTask extends AsyncTask<Void, Void, Boolean> {
 
-	private DataConsumer<List<String>> dataToProcess = new DataConsumer<List<String>>(100);
+	private DataConsumer<FrameData> dataToProcess = new DataConsumer<FrameData>(100);
 	private static final String END_STREAM = "END_STREAM";
 	private static final String CONNECT_STRING = "CONNECT";
 	private static final String TAG = "ZeroMQTask";
@@ -71,14 +73,8 @@ public class ZeroMQTransportTask extends AsyncTask<Void, Void, Boolean> {
 		streamId = "";
 	}
 	public boolean sendMessge(String frame, String time) {
-		Log.d(TAG, "SENDING:" + frame.length());
 		
-		List<String> data = new ArrayList<String>();
-		data.add(streamId);
-		data.add(token);
-		data.add(String.valueOf(sequenceNumber));
-		data.add(time);
-		data.add(frame);
+		FrameData data = new FrameData(frame,time);
 		if (connected) {
 			try {
 				synchronized(dataToProcess) {
@@ -99,12 +95,19 @@ public class ZeroMQTransportTask extends AsyncTask<Void, Void, Boolean> {
 
 		while (connected && !isCancelled()) {
 			
-			 List<String> data ;
+			 FrameData frameData ;
 			try {
 				Log.d(TAG,"waiting for data");
-				data = dataToProcess.take();
-				if (data != null) {
-					 connected  = transmitData(data);
+				frameData = dataToProcess.take();
+				
+				if (frameData != null) {
+					List<String> data = new ArrayList<String>();
+					data.add(streamId);
+					data.add(token);
+					data.add(String.valueOf(sequenceNumber));
+					data.add(frameData.getTime());
+					data.add(frameData.getFrame());
+					connected  = transmitData(data);
 				 } else {
 					 connected = false;
 				 }
@@ -144,6 +147,7 @@ public class ZeroMQTransportTask extends AsyncTask<Void, Void, Boolean> {
 	private synchronized boolean transmitData(List<String> data) {
 		pollingResponse = null;
 		int retries = 0;
+		
 		do {
 
 			if (data.size() > 1) {
@@ -153,6 +157,7 @@ public class ZeroMQTransportTask extends AsyncTask<Void, Void, Boolean> {
 				}
 			}
 			socket.send(data.get(data.size() - 1), 0);
+			Log.d(TAG,"DATA SENT:"+data.size());
 			pollingResponse = pollForResponse();
 			if (pollingResponse.getStatus() == PollingResponse.RETRY) {
 				socket = context.socket(ZMQ.REQ);
@@ -221,6 +226,7 @@ public class ZeroMQTransportTask extends AsyncTask<Void, Void, Boolean> {
 	}
 
 	public void waitForSocketToBeClose() {
+		connected = false;
 		synchronized(dataToProcess) {
 			dataToProcess.done();
 			dataToProcess.notify();
