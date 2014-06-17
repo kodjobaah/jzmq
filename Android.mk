@@ -70,7 +70,7 @@ endif
 ifeq ($(UNAME), Windows)
 java_files := $(shell dir /B /O-N $(LOCAL_PATH)\src\main\java\org\zeromq)
 $(shell $(foreach java_file,$(java_files), $(shell javac -verbose -classpath $(LOCAL_PATH)\src\main\c++ -sourcepath $(LOCAL_PATH)\src\main\java -d $(LOCAL_PATH)\src\main\c++ $(LOCAL_PATH)\src\main\java\org\zeromq\$(java_file))))
-$(shell cd C:\Users\whatamidoing\hey\whatamidoingffmpeg\jni\jzmq\src\main\c++; javah -jni org.zeromq.ZMQ; cd C:\Users\whatamidoing\hey\whatamidoingffmpeg\jni\jzmq)
+$($(shell cd $(LOCAL_PATH)\src\main\c++), $(shell javah -jni org.zeromq.ZMQ))
 endif
 
 
