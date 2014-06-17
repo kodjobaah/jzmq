@@ -20,7 +20,6 @@ stamp-*
 *.lo
 *~
 src/main/c++/config.hpp.in
-src/main/c++/config.hpp
 src/main/c++/org_zeromq_*.h
 lib/
 target/
