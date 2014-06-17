@@ -1,0 +1,3 @@
+[submodule "jni/jzmq"]
+	path = jni/jzmq
+	url = https://github.com/kodjobaah/jzmq.git
