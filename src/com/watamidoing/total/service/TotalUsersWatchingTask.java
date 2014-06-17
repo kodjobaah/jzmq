@@ -18,7 +18,7 @@ import com.watamidoing.view.WhatAmIdoing;
 
 public class TotalUsersWatchingTask extends AsyncTask<Void, Void, Boolean> {
 
-	private static final String TAG = "TotalUsersWatchingTask";
+	private static final String TAG = TotalUsersWatchingTask.class.getName();
 	private TotalWatchersService context;
 	private String totalWatchingUrl;
 	private String token;

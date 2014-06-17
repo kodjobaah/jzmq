@@ -84,6 +84,7 @@ import com.watamidoing.total.receivers.TotalWatchersReceiver;
 import com.watamidoing.total.service.TotalUsersWatchingTask;
 import com.watamidoing.total.service.TotalWatchersService;
 import com.watamidoing.transport.receivers.NetworkChangeReceiver;
+import com.watamidoing.transport.receivers.ZeroMQServiceDestroyedReceiver;
 import com.watamidoing.transport.receivers.ZeroMQServiceStoppedReceiver;
 import com.watamidoing.transport.service.ZeroMQService;
 import com.watamidoing.transport.service.ZeroMQServiceConnection;
@@ -99,7 +100,7 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 	/**
 	 * 
 	 */
-	private static final String TAG = "WhatAmIdoing";
+	private static final String TAG = WhatAmIdoing.class.getName();
 	private static final long serialVersionUID = 8274547292305156402L;
 	private static final String START_CAMERA = "Start Camera";
 	private static final String STOP_CAMERA = "Stop Camera";
@@ -123,6 +124,7 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 	 */
 	private ServiceConnection zeroMQServiceConnection;
 	protected ZeroMQServiceStoppedReceiver serviceStoppedReceiver;
+	private ZeroMQServiceDestroyedReceiver serviceDestroyedReceiver;
 	protected NetworkChangeReceiver networkChangeReceiver;
 
 	protected boolean sharing = false;
@@ -188,7 +190,7 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 
 	static {
 		if (!OpenCVLoader.initDebug()) {
-			Log.i(TAG, "-------------------- UNABLE TO OPEN -- OPEN CV");
+			Log.e(TAG, "-------------------- UNABLE TO OPEN -- OPEN CV");
 		}
 	}
 
@@ -521,6 +523,7 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 	public void restartTransmission() {
 		runOnUiThread(new Thread(new Runnable() {
 			private IntentFilter filterServiceStoppedReceiver;
+			private IntentFilter filterServiceDestroyedReceiver;
 			private IntentFilter filterTotalWatchersReceiver;
 
 			public void run() {
@@ -565,6 +568,23 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 							filterServiceStoppedReceiver);
 				}
 
+				if (serviceDestroyedReceiver == null) {
+					filterServiceDestroyedReceiver = new IntentFilter(
+							ZeroMQServiceDestroyedReceiver.SERVICE_DESTROYED);
+					filterServiceDestroyedReceiver
+							.addCategory(Intent.CATEGORY_DEFAULT);
+					serviceDestroyedReceiver = new ZeroMQServiceDestroyedReceiver(
+							activity);
+					try {
+						unregisterReceiver(serviceDestroyedReceiver);
+					} catch (Exception e) {
+
+					}
+					registerReceiver(serviceDestroyedReceiver,
+							filterServiceDestroyedReceiver);
+				}
+
+				
 				doBindService();
 
 			}
@@ -580,6 +600,7 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 		runOnUiThread(new Thread(new Runnable() {
 
 			private IntentFilter filterServiceStoppedReceiver;
+			private IntentFilter filterServiceDestroyedReceiver;
 			private IntentFilter filterRegisterReceiver;
 			private IntentFilter filterTotalWatchersReceiver;
 
@@ -644,6 +665,18 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 								filterServiceStoppedReceiver);
 					}
 
+					if (serviceDestroyedReceiver == null) {
+						filterServiceDestroyedReceiver = new IntentFilter(
+								ZeroMQServiceDestroyedReceiver.SERVICE_DESTROYED);
+						filterServiceDestroyedReceiver
+								.addCategory(Intent.CATEGORY_DEFAULT);
+						serviceDestroyedReceiver = new ZeroMQServiceDestroyedReceiver(
+								activity);
+						registerReceiver(serviceDestroyedReceiver,
+								filterServiceDestroyedReceiver);
+					}
+
+					
 					// networkChangeReceiver = new
 					// NetworkChangeReceiver(activity);
 
@@ -1044,13 +1077,14 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 				activity.callOriginalOnBackPressed();
 			}
 
+			
 			startSharingState = START_SHARING;
 			final ImageButton transmissionButton = (ImageButton) activity
 					.findViewById(R.id.start_transmission);
 			transmissionButton.setImageResource(R.drawable.share_blue);
 			transmissionButton.setEnabled(true);
 			videoSharing = false;
-
+			
 			if (sendLocationMenuItem != null) {
 				sendLocationMenuItem.setEnabled(false);
 				whosAcceptedMenuItem.setEnabled(false);
@@ -1633,5 +1667,25 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 			}
 		}));
 
+	}
+
+	@Override
+	public void zeroMQServiceDestroyed(boolean serviceDestroyed) {
+		
+		runOnUiThread(new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				videoSharing = false;
+				startSharingState = START_SHARING;
+				ImageButton startTransmission = (ImageButton) activity
+						.findViewById(R.id.start_transmission);
+				startTransmission.setEnabled(true);
+				startTransmission.setImageResource(R.drawable.share_blue);
+			}
+			
+		}));
+		
+		
 	}
 }

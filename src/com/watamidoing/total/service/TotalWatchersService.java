@@ -18,14 +18,13 @@ import android.util.Log;
 
 import com.watamidoing.reeiver.callbacks.TotalWatchersController;
 import com.watamidoing.total.receivers.TotalWatchersReceiver;
-import com.watamidoing.transport.service.ZeroMQService;
 
 
 public class TotalWatchersService extends Service {
 	 
 
 	
-	private static final String TAG = "TotalWatchersService";
+	private static final String TAG = TotalWatchersService.class.getName();
 
 	private NotificationManager nm;
 	
@@ -115,8 +114,8 @@ public class TotalWatchersService extends Service {
 					}
 					
 				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					Log.e(TAG,e.getMessage());
+					totalWatchersService.stopSelf();
 				}
                 		
                 	
@@ -129,7 +128,7 @@ public class TotalWatchersService extends Service {
 
      /**
      * When binding to the service, we return an interface to our messenger
-     * for sending messages to the serv        ice.
+     * for sending messages to the service.
      */
     @Override
     public IBinder onBind(Intent intent) {
@@ -172,7 +171,7 @@ public class TotalWatchersService extends Service {
 	}
     
     private void start() {
-    		Log.i(TAG,"------------ STARTED TOTAL WATCHERS SERVICE");
+    		Log.d(TAG,"------------ STARTED TOTAL WATCHERS SERVICE");
     	    incomingHandler = new IncomingHandler(this);
     		mMessenger= new Messenger(incomingHandler);
     		totalUsersWatchingTask = new TotalUsersWatchingTask(this);
@@ -201,8 +200,8 @@ public class TotalWatchersService extends Service {
 			if (mMessenger != null)
 				mMessenger.send(message);
 		} catch (RemoteException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Log.e(TAG,e.getMessage());
+			stopSelf();
 		}
 		
 	}

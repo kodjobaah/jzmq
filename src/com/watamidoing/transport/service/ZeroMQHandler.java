@@ -21,7 +21,9 @@ import android.os.StrictMode;
 import android.util.Log;
 
 public class ZeroMQHandler extends Thread{
-    public Handler mHandler;
+    
+	
+	private static final String TAG = ZeroMQHandler.class.getName();
 	private String pUrl;
 	private String token;
 	private Context context;
@@ -33,11 +35,11 @@ public class ZeroMQHandler extends Thread{
 	private Boolean socketClosed = false;
 	private static final String END_STREAM = "END_STREAM";
 	private static final String CONNECT_STRING = "CONNECT";
-	private static final String TAG = "ZeroMQHandler";
 	private final static int REQUEST_TIMEOUT = 4000; // msecs, (> 1000!)
 	private final static int REQUEST_RETRIES = 3; // Before we abandon
 
-    
+	private Handler mHandler;
+	
 	static {
 		Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO);
 
@@ -88,8 +90,7 @@ public class ZeroMQHandler extends Thread{
 				connected  = transmitData(data);
 				
 				if (!connected) {
-					Looper looper = Looper.myLooper();
-					looper.quit();
+					quitLooper();
 				}
             	// process incoming messages here
             }
@@ -102,11 +103,9 @@ public class ZeroMQHandler extends Thread{
 			Log.d(TAG,"doInbackground:before sending close stream message");
 			sendCloseStreamMessage();
 			Log.d(TAG,"doInbackground:sent close stream message");
-		} else {
-			socket.setLinger(0);
 		}
-		
 		socket.disconnect(pUrl);
+		socket.setLinger(0);
 		socket.close();
 		synchronized(socketClosed) {
 			socketClosed = true;

@@ -472,6 +472,10 @@ public class ZMQ {
             return new Poller(this, size);
         }
 
+        public void zmqDestroyContext() {
+        	zmqDestroy();
+        }
+        
         /**
          * Class constructor.
          * 
@@ -484,6 +488,9 @@ public class ZMQ {
         /** Initialize the JNI interface */
         protected native void construct(int ioThreads);
 
+        /** Used to free zmq context...this should be done before calling destroy **/
+        protected native void zmqDestroy();
+        
         /** Free all resources used by JNI interface. */
         protected native void destroy();
 

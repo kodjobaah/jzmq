@@ -28,7 +28,7 @@ import com.watamidoing.transport.service.ZeroMQService;
 
 public class ImageHandler extends Handler {
 
-	private String TAG = "ImageHandler";
+	private String TAG = ImageHandler.class.getName();
 
 	private int compressionQuality = 70;
 

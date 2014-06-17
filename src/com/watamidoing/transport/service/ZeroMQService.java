@@ -3,6 +3,7 @@ package com.watamidoing.transport.service;
 import java.util.ArrayList;
 
 import org.zeromq.ZMQ;
+import org.zeromq.ZMQException;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -10,6 +11,7 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.database.sqlite.SQLiteCantOpenDatabaseException;
+import android.os.Debug;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
@@ -21,6 +23,7 @@ import android.util.Log;
 import com.waid.R;
 import com.watamidoing.contentproviders.Authentication;
 import com.watamidoing.contentproviders.DatabaseHandler;
+import com.watamidoing.transport.receivers.ZeroMQServiceDestroyedReceiver;
 import com.watamidoing.transport.receivers.ZeroMQServiceStoppedReceiver;
 import com.watamidoing.transport.zeromq.tasks.ZeroMQTransportTask;
 
@@ -62,7 +65,7 @@ public class ZeroMQService extends Service {
 	 */
 	static final int MSG_SET_VALUE = 3;
 
-	private static final String TAG = "ZeroMQService";
+	private static final String TAG = ZeroMQService.class.getName();
 
 	/**
 	 * Handler of incoming messages from clients.
@@ -90,15 +93,23 @@ public class ZeroMQService extends Service {
 		public void terminateContext() {
 			task.waitForSocketToBeClose();
 			//try {
-			Log.d(TAG,"TERMINATING CONTEDXT");
 			  //context.close();
+			try {
+			  Log.d(TAG,"DESTROYING CONTEXT");
+			  context.zmqDestroyContext();
+			  Log.d(TAG,"TERMINATING CONTEDXT");
 			  context.term();
 			  Log.d(TAG,"Able to terminat Context");
+			} catch(ZMQException exp) {
+				Log.e(TAG,"---Problems Terminating Context:"+exp.getMessage());
+			}
+			  
 			//} catch (IllegalStateException ise) {
 			//	Log.e(TAG,ise.getMessage());
 			//}
 		}
 		public void connectToZeroMQ(String pUrl) {
+			Debug.startMethodTracing("zeromq");
 			context = ZMQ.context(1);
 			task = new ZeroMQHandler(pUrl,
 					zeroMQService.getAuthenticatonToken(),context);
@@ -162,7 +173,7 @@ public class ZeroMQService extends Service {
 				sendServiceStopNotification();
 			}
 		} catch(SQLiteCantOpenDatabaseException ex) {
-			Log.d(TAG,ex.getMessage());
+			Log.e(TAG,ex.getMessage());
 			sendServiceStopNotification();
 		}
 		
@@ -190,6 +201,8 @@ public class ZeroMQService extends Service {
 			handler = null;
 		}
 		Log.d(TAG,"Returning from destory");
+		sendServiceDestroyedNotification();
+		Debug.stopMethodTracing();
 	}
 
 	/**
@@ -242,6 +255,14 @@ public class ZeroMQService extends Service {
 	protected void sendServiceStopNotification() {
 		Intent broadcastIntent = new Intent();
 		broadcastIntent.setAction(ZeroMQServiceStoppedReceiver.SERVICE_STOPED);
+		broadcastIntent.addCategory(Intent.CATEGORY_DEFAULT);
+		sendBroadcast(broadcastIntent);
+
+	}
+	
+	protected void sendServiceDestroyedNotification() {
+		Intent broadcastIntent = new Intent();
+		broadcastIntent.setAction(ZeroMQServiceDestroyedReceiver.SERVICE_DESTROYED);
 		broadcastIntent.addCategory(Intent.CATEGORY_DEFAULT);
 		sendBroadcast(broadcastIntent);
 

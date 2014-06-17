@@ -31,4 +31,6 @@ public interface ZeroMQController extends Serializable {
 	 */
 	public void zeroMQServiceStop(boolean serviceStopped);
 
+	public void zeroMQServiceDestroyed(boolean serviceDestroyed);
+
 }

@@ -15,11 +15,12 @@ import com.watamidoing.SessionParser;
 
 public class HttpConnectionHelper {
 
+	private String TAG = HttpConnectionHelper.class.getName();
 	private static final String COOKIES_HEADER = "Set-Cookie";
 	private static final int CONNECTION_TIMEOUT = 000;
 	private static final int DATARETRIEVAL_TIMEOUT = 10000;
-	HttpURLConnection urlConnection = null;
-
+	private HttpURLConnection urlConnection = null;
+	
 	public ConnectionResult connect(String urlVal) {
 		
 	
@@ -41,10 +42,10 @@ public class HttpConnectionHelper {
 				result += line;
 			}
 			int statusCode = urlConnection.getResponseCode();
-			Log.i("HttpConnectionHelper.connect","status code["+statusCode+"]");
+			Log.i(TAG,"status code["+statusCode+"]");
 			connectionResult = new ConnectionResult(result, statusCode);
-		} catch (IOException e) {
-			e.printStackTrace();
+		} catch (Exception e) {
+			Log.e(TAG,"HttpConnectionHelper could not connecct");
 		}
 		return connectionResult;
 	}
@@ -70,7 +71,7 @@ public class HttpConnectionHelper {
 				result += line;
 			}
 			int statusCode = urlConnection.getResponseCode();
-			Log.i("HttpConnectionHelper.connect","status code["+statusCode+"]");
+			Log.i(TAG,"status code["+statusCode+"]");
 			connectionResult = new ConnectionResult(result, statusCode);
 		} catch (IOException e) {
 			e.printStackTrace();

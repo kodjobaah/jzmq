@@ -35,6 +35,8 @@ import com.watamidoing.view.WhatAmIdoing;
  * well.
  */
 public class Login extends Activity {
+	private static final String TAG = Login.class.getName();
+
 	/**
 	 * The default email to populate the email field with.
 	 */
@@ -74,11 +76,11 @@ public class Login extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 
 		this.activity = this;
-		Log.i("com.whatamidoing", "---------------------------1");
+		Log.i(TAG, "---------------------------1");
 		super.onCreate(savedInstanceState);
-		Log.i("com.whatamidoing", "---------------------------2");
+		Log.i(TAG, "---------------------------2");
 		setContentView(R.layout.activity_login);
-		Log.i("com.whatamidoing", "---------------------------3");
+		Log.i(TAG, "---------------------------3");
 		// Set up the login form.
 		mEmail = getIntent().getStringExtra(EXTRA_EMAIL);
 		mEmailView = (EditText) findViewById(R.id.email);
@@ -260,7 +262,7 @@ public class Login extends Activity {
 				if ((connectionResult != null) && (connectionResult.getStatusCode() == HttpURLConnection.HTTP_OK)) {
 					String newAuthSuccessMessage = getResources().getString(R.string.new_auth_success_message);
 					String authSuccessMessage = getResources().getString(R.string.auth_success_message);
-					Log.i("Login.UserLoginTask.doInBackgroud","results from login["+connectionResult.getResult()+"]");
+					Log.i(TAG,"results from login["+connectionResult.getResult()+"]");
 					if (authSuccessMessage.equalsIgnoreCase(connectionResult.getResult()) ||
 							newAuthSuccessMessage.equalsIgnoreCase(connectionResult.getResult())) {
 						SessionParser sessionParser = connectionHelper.getPlaySession();
@@ -279,22 +281,22 @@ public class Login extends Activity {
 							DatabaseHandler.getInstance(getApplicationContext()).putAuthentication(auth);
 							result = connectionResult.getResult();
 						} else {
-							Log.i("login.userlogin.task", "cookie not set result=["
+							Log.i(TAG, "cookie not set result=["
 									+ result + "]");
 							result = null;
 						}
 					} else {
-						Log.i("login.userlogin.task", "failure result=["
+						Log.i(TAG, "failure result=["
 								+ result + "]");
 						result = null;
 					}
 				} else {
 					
 					if (connectionResult == null) {
-						Log.i("login.userlogin.task", "Problems connecting");
+						Log.i(TAG, "Problems connecting");
 						problemsConnecting = -1;
 						} else {
-							Log.i("login.userlogin.task","Problems status cost ["+ connectionResult.getStatusCode() + "] result=[" + connectionResult.getResult() + "]");
+							Log.i(TAG,"Problems status cost ["+ connectionResult.getStatusCode() + "] result=[" + connectionResult.getResult() + "]");
 					}
 					
 					result = null;
@@ -344,6 +346,5 @@ public class Login extends Activity {
 	public void resetPassword() {
 		UtilsWhatAmIdoing.displayForgotPasswordLinkDialog(this);
 	}
-
 	
 }

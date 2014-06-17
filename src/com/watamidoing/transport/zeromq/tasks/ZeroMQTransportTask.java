@@ -21,7 +21,7 @@ public class ZeroMQTransportTask extends AsyncTask<Void, Void, Boolean> {
 	private LinkedBlockingQueue<FrameData> dataToProcess = new LinkedBlockingQueue<FrameData>(100);
 	private static final String END_STREAM = "END_STREAM";
 	private static final String CONNECT_STRING = "CONNECT";
-	private static final String TAG = "ZeroMQTask";
+	private static final String TAG = ZeroMQTransportTask.class.getName();
 	private final static int REQUEST_TIMEOUT = 4000; // msecs, (> 1000!)
 	private final static int REQUEST_RETRIES = 3; // Before we abandon
 	ZMQ.Context context;
