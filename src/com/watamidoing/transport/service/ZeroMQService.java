@@ -23,9 +23,7 @@ import android.util.Log;
 import com.waid.R;
 import com.watamidoing.contentproviders.Authentication;
 import com.watamidoing.contentproviders.DatabaseHandler;
-import com.watamidoing.transport.receivers.ZeroMQServiceDestroyedReceiver;
 import com.watamidoing.transport.receivers.ZeroMQServiceStoppedReceiver;
-import com.watamidoing.transport.zeromq.tasks.ZeroMQTransportTask;
 
 public class ZeroMQService extends Service {
 
@@ -136,8 +134,6 @@ public class ZeroMQService extends Service {
 						System.gc();
 						if (!result) {
 							transmit = false;
-							this.getLooper().quit();
-							terminateContext();
 							Log.d(TAG,"Unable to send message should be ending service");
 							zeroMQService.sendServiceStopNotification();
 						}
@@ -191,17 +187,10 @@ public class ZeroMQService extends Service {
 				Log.d(TAG,"has messages removing");
 				handler.removeMessages(PUSH_MESSAGE_TO_QUEUE);
 			}
-			if (transmit) {
-				handler.terminateContext();
-			}else {
-				handler.task.quitLooper();
-				handler.task = null;
-			}
-			mMessenger = null;
-			handler = null;
+			//This will cause the a SIGINT to be sent to the service -- Abrupt termination
+			handler.terminateContext();
 		}
 		Log.d(TAG,"Returning from destory");
-		sendServiceDestroyedNotification();
 		Debug.stopMethodTracing();
 	}
 
@@ -255,14 +244,6 @@ public class ZeroMQService extends Service {
 	protected void sendServiceStopNotification() {
 		Intent broadcastIntent = new Intent();
 		broadcastIntent.setAction(ZeroMQServiceStoppedReceiver.SERVICE_STOPED);
-		broadcastIntent.addCategory(Intent.CATEGORY_DEFAULT);
-		sendBroadcast(broadcastIntent);
-
-	}
-	
-	protected void sendServiceDestroyedNotification() {
-		Intent broadcastIntent = new Intent();
-		broadcastIntent.setAction(ZeroMQServiceDestroyedReceiver.SERVICE_DESTROYED);
 		broadcastIntent.addCategory(Intent.CATEGORY_DEFAULT);
 		sendBroadcast(broadcastIntent);
 

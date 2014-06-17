@@ -84,7 +84,6 @@ import com.watamidoing.total.receivers.TotalWatchersReceiver;
 import com.watamidoing.total.service.TotalUsersWatchingTask;
 import com.watamidoing.total.service.TotalWatchersService;
 import com.watamidoing.transport.receivers.NetworkChangeReceiver;
-import com.watamidoing.transport.receivers.ZeroMQServiceDestroyedReceiver;
 import com.watamidoing.transport.receivers.ZeroMQServiceStoppedReceiver;
 import com.watamidoing.transport.service.ZeroMQService;
 import com.watamidoing.transport.service.ZeroMQServiceConnection;
@@ -124,7 +123,6 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 	 */
 	private ServiceConnection zeroMQServiceConnection;
 	protected ZeroMQServiceStoppedReceiver serviceStoppedReceiver;
-	private ZeroMQServiceDestroyedReceiver serviceDestroyedReceiver;
 	protected NetworkChangeReceiver networkChangeReceiver;
 
 	protected boolean sharing = false;
@@ -523,7 +521,6 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 	public void restartTransmission() {
 		runOnUiThread(new Thread(new Runnable() {
 			private IntentFilter filterServiceStoppedReceiver;
-			private IntentFilter filterServiceDestroyedReceiver;
 			private IntentFilter filterTotalWatchersReceiver;
 
 			public void run() {
@@ -567,23 +564,6 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 					registerReceiver(serviceStoppedReceiver,
 							filterServiceStoppedReceiver);
 				}
-
-				if (serviceDestroyedReceiver == null) {
-					filterServiceDestroyedReceiver = new IntentFilter(
-							ZeroMQServiceDestroyedReceiver.SERVICE_DESTROYED);
-					filterServiceDestroyedReceiver
-							.addCategory(Intent.CATEGORY_DEFAULT);
-					serviceDestroyedReceiver = new ZeroMQServiceDestroyedReceiver(
-							activity);
-					try {
-						unregisterReceiver(serviceDestroyedReceiver);
-					} catch (Exception e) {
-
-					}
-					registerReceiver(serviceDestroyedReceiver,
-							filterServiceDestroyedReceiver);
-				}
-
 				
 				doBindService();
 
@@ -600,7 +580,6 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 		runOnUiThread(new Thread(new Runnable() {
 
 			private IntentFilter filterServiceStoppedReceiver;
-			private IntentFilter filterServiceDestroyedReceiver;
 			private IntentFilter filterRegisterReceiver;
 			private IntentFilter filterTotalWatchersReceiver;
 
@@ -663,17 +642,6 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 								activity);
 						registerReceiver(serviceStoppedReceiver,
 								filterServiceStoppedReceiver);
-					}
-
-					if (serviceDestroyedReceiver == null) {
-						filterServiceDestroyedReceiver = new IntentFilter(
-								ZeroMQServiceDestroyedReceiver.SERVICE_DESTROYED);
-						filterServiceDestroyedReceiver
-								.addCategory(Intent.CATEGORY_DEFAULT);
-						serviceDestroyedReceiver = new ZeroMQServiceDestroyedReceiver(
-								activity);
-						registerReceiver(serviceDestroyedReceiver,
-								filterServiceDestroyedReceiver);
 					}
 
 					
