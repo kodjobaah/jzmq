@@ -19,6 +19,8 @@
 
 #include <assert.h>
 
+#include <signal.h>
+#include <pthread.h>
 #include <zmq.h>
 
 #include "jzmq.hpp"
@@ -51,6 +53,36 @@ JNIEXPORT void JNICALL Java_org_zeromq_ZMQ_00024Context_construct (JNIEnv *env,
         raise_exception (env, err);
         return;
     }
+}
+
+
+
+
+
+/**
+ * Called to destroy zmq ctx.
+ */
+JNIEXPORT void JNICALL Java_org_zeromq_ZMQ_00024Context_zmqDestroy (JNIEnv *env, jobject obj)
+{
+
+
+    void *c = get_context (env, obj);
+    if (! c)
+        return;
+
+   // int hey = pthread_kill(pthread_self(),SIGINT);
+    int hey = raise(SIGINT);
+    /*
+    int rc = zmq_ctx_destroy(c);
+    int err = zmq_errno();
+    c = NULL;
+    put_context (env, obj, c);
+
+    if (rc != 0) {
+        raise_exception (env, err);
+        return;
+    }
+    */
 }
 
 /**
