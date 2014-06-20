@@ -75,4 +75,6 @@ LOCAL_SRC_FILES := src/address.cpp \
 	src/zmq.cpp \
 	src/zmq_utils.cpp
 	
-  include $(BUILD_SHARED_LIBRARY)
+ LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/include
+
+ include $(BUILD_SHARED_LIBRARY)
