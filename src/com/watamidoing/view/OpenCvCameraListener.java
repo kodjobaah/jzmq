@@ -5,8 +5,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
+import org.opencv.android.JavaCameraView;
 import org.opencv.android.NativeCameraView;
 import org.opencv.android.Utils;
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
@@ -19,6 +21,7 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
 import android.util.Log;
+import android.view.Surface;
 
 import com.watamidoing.camera.ImageHandler;
 
@@ -29,9 +32,18 @@ public class OpenCvCameraListener implements CvCameraViewListener2 {
 	private ImageHandler imageHandler;
 	private Messenger mMessenger;
 	private LinkedBlockingQueue<CameraViewData> dataQueue;
-	private NativeCameraView cameraView;
+	private JavaCameraView cameraView;
+
+	private WhatAmIdoing whatAmIdoing;
 
 	public OpenCvCameraListener() {
+		dataQueue = new LinkedBlockingQueue<CameraViewData>();
+		FrameConsumer consumer = new FrameConsumer();
+		new Thread(consumer).start();
+	}
+
+	public OpenCvCameraListener(WhatAmIdoing whatAmIdoing) {
+		this.whatAmIdoing = whatAmIdoing;
 		dataQueue = new LinkedBlockingQueue<CameraViewData>();
 		FrameConsumer consumer = new FrameConsumer();
 		new Thread(consumer).start();
@@ -88,6 +100,10 @@ public class OpenCvCameraListener implements CvCameraViewListener2 {
 				rgbResize = null;
 
 				ByteArrayOutputStream jpegOutputStream = new ByteArrayOutputStream();
+				
+				if ((compressQuality < 0) || (compressQuality > 100)) {
+					compressQuality = 70;
+				}
 				bmp.compress(CompressFormat.JPEG, compressQuality,
 						jpegOutputStream);
 				bmp = null;
@@ -141,15 +157,17 @@ public class OpenCvCameraListener implements CvCameraViewListener2 {
 	public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
 
 		CameraViewData cvd = new CameraViewData();
+		
 		Mat rgb = inputFrame.rgba();
 		if ((rgb != null) && (rgb.width() > 0) && (rgb.height() > 0)) {
 			cvd.setMat(rgb);
 			dataQueue.add(cvd);
+			
 		}
 		return rgb;
 	}
 
-	public void setCameraView(NativeCameraView cameraView) {
+	public void setCameraView(JavaCameraView cameraView) {
 		this.cameraView = cameraView;
 
 	}
@@ -167,6 +185,29 @@ public class OpenCvCameraListener implements CvCameraViewListener2 {
 		imageHandler = null;
 		mMessenger = null;
 
+	}
+	
+	public int getOrientation() {
+		android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
+		android.hardware.Camera.getCameraInfo(whatAmIdoing.getCameraId(), info);
+		int rotation = whatAmIdoing.getWindowManager().getDefaultDisplay()
+				.getRotation();
+		int degrees = 0;
+		switch (rotation) {
+		case Surface.ROTATION_0:
+			degrees = 0;
+			break;
+		case Surface.ROTATION_90:
+			degrees = 90;
+			break;
+		case Surface.ROTATION_180:
+			degrees = 180;
+			break;
+		case Surface.ROTATION_270:
+			degrees = 270;
+			break;
+		}
+		return degrees;
 	}
 
 }

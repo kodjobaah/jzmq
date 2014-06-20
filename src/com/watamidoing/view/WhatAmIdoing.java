@@ -4,6 +4,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.opencv.android.BaseLoaderCallback;
+import org.opencv.android.JavaCameraView;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.NativeCameraView;
 import org.opencv.android.OpenCVLoader;
@@ -117,7 +118,7 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 	private boolean videoSharing = false;
 	private int imageWidth = 320;
 	private int imageHeight = 240;
-	private NativeCameraView cameraView;
+	private JavaCameraView cameraView;
 	/**
 	 * Class for interacting with the main interface of the service.
 	 */
@@ -259,10 +260,11 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 				.getScreenDimensions(activity);
 		ViewGroup.LayoutParams params = mainLayout.getLayoutParams();
 
-		cameraView = (NativeCameraView) mainLayout
+		cameraView = (JavaCameraView) mainLayout
 				.findViewById(R.id.opencvCameraView);
+	
 		cameraView.enableFpsMeter();
-		opencvCameraListener = new OpenCvCameraListener();
+		opencvCameraListener = new OpenCvCameraListener(this);
 		opencvCameraListener.setCameraView(cameraView);
 		cameraView.setCvCameraViewListener(opencvCameraListener);
 		cameraView.setVisibility(SurfaceView.VISIBLE);
@@ -692,8 +694,31 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 
 	}
 
-	public void setCameraDisplayOrientation(Activity activity, int cameraId,
-			android.hardware.Camera camera) {
+	public int getOrientation() {
+		android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
+		android.hardware.Camera.getCameraInfo(cameraId, info);
+		int rotation = activity.getWindowManager().getDefaultDisplay()
+				.getRotation();
+		int degrees = 0;
+		switch (rotation) {
+		case Surface.ROTATION_0:
+			degrees = 0;
+			break;
+		case Surface.ROTATION_90:
+			degrees = 90;
+			break;
+		case Surface.ROTATION_180:
+			degrees = 180;
+			break;
+		case Surface.ROTATION_270:
+			degrees = 270;
+			break;
+		}
+		return degrees;
+	}
+	
+	public void setCameraDisplayOrientation() {
+		
 		android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
 		android.hardware.Camera.getCameraInfo(cameraId, info);
 		int rotation = activity.getWindowManager().getDefaultDisplay()
@@ -721,7 +746,7 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 		} else { // back-facing
 			result = (info.orientation - degrees + 360) % 360;
 		}
-		camera.setDisplayOrientation(result);
+		
 	}
 
 	@Override
@@ -1119,6 +1144,7 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 			/*
 			 * Changing the size of the screen
 			 */
+			
 			ScreenDimension dimension = UtilsWhatAmIdoing
 					.getScreenDimensions(activity);
 			// get layout parameters for that element
@@ -1126,6 +1152,8 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 				mainLayout = (LinearLayout) this
 						.findViewById(R.id.momemts_frame);
 			}
+			
+			
 			ViewGroup.LayoutParams params = mainLayout.getLayoutParams();
 
 			imageHeight = params.height;
@@ -1134,6 +1162,9 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 			// cameraView = new CameraView(activity);
 			// mainLayout.addView(cameraView, layoutParam);
 			// mainLayout.addView(cameraView);
+			int rotation = activity.getWindowManager().getDefaultDisplay()
+					.getRotation();
+			cameraView.setOrientation(rotation,cameraId);
 			cameraView.enableView();
 			cameraView.enableFpsMeter();
 			videoStart = true;
@@ -1655,5 +1686,9 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 		}));
 		
 		
+	}
+
+	public int getCameraId() {
+		return cameraId;
 	}
 }

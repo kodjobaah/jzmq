@@ -1,15 +1,17 @@
 include $(CLEAR_VARS)
 
 # OpenCV
-#OPENCV_CAMERA_MODULES:=on
-#OPENCV_INSTALL_MODULES:=on
+OPENCV_CAMERA_MODULES:=on
+OPENCV_INSTALL_MODULES:=on
+OPENCV_LIB_TYPE:=SHARED
 include C:\Users\whatamidoing\OpenCV-2.4.9-android-sdk\sdk\native\jni\OpenCV.mk
 
+include $(CLEAR_VARS)
+include  C:\Users\whatamidoing\hey\whatamidoingffmpeg\jni\native\Android.mk
+
 # ZeroMQ
-include $(CLEAR_VARS)
+#include $(CLEAR_VARS)
+#include  C:\Users\whatamidoing\hey\whatamidoingffmpeg\jni\zeromq\Android.mk
 
-include  C:\Users\whatamidoing\hey\whatamidoingffmpeg\jni\zeromq\Android.mk
-
-
-include $(CLEAR_VARS)
-include  C:\Users\whatamidoing\hey\whatamidoingffmpeg\jni\jzmq\Android.mk
+#include $(CLEAR_VARS)
+#include  C:\Users\whatamidoing\hey\whatamidoingffmpeg\jni\jzmq\Android.mk

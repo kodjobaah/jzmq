@@ -117,7 +117,7 @@
                 android:background="@drawable/moments_frame"
                 android:orientation="horizontal"
                 android:padding="4dp" >
-               <org.opencv.android.NativeCameraView
+               <org.opencv.android.JavaCameraView
           android:layout_width="fill_parent"
           android:layout_height="fill_parent"
           android:visibility="gone"
