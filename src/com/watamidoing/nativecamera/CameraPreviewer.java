@@ -1,5 +1,6 @@
 package com.watamidoing.nativecamera;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.opencv.android.CameraBridgeViewBase.ListItemAccessor;
@@ -11,33 +12,42 @@ import org.opencv.highgui.VideoCapture;
 import android.app.Activity;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Display;
 
 
 public class CameraPreviewer extends Activity {
 
-	GLSurfaceView mView;
-	
+	protected static final String TAG = CameraPreviewer.class.getName();
+	GLSurfaceView mView = null;
+
 	@Override 
 	protected void onCreate(Bundle icicle) {
 		super.onCreate(icicle);
-		Native.loadlibs();
 		VideoCapture mCamera = new VideoCapture(Highgui.CV_CAP_ANDROID);
-		java.util.List<Size> sizes = mCamera.getSupportedPreviewSizes();
-		mCamera.release();
+		
+		java.util.List<Size> sizes = new ArrayList<Size>();
+		try {
+			sizes = mCamera.getSupportedPreviewSizes();
+			mCamera.release();
+		
+		} catch (NumberFormatException e) {
+			
+		}
 		
 		mView = new GLSurfaceView(getApplication()) {
 			@Override
 			public void onPause() {
 				super.onPause();
-				Native.releaseCamera();
+				Log.i(TAG,"Paused");
+				//Native.releaseCamera();
 			}
 			
 		};
 		
 		
 		Size  size = calculateCameraFrameSize(sizes,new OpenCvSizeAccessor());
-		mView.setRenderer(new CameraRenderer(this,size));
+		//mView.setRenderer(new CameraRenderer(this,size));
 		mView.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
 		setContentView(mView);
 	}

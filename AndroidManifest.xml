@@ -19,6 +19,12 @@
      <!-- 
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
      -->
+    <uses-feature android:glEsVersion="0x00020000" android:required="true" />
+     <!-- 
+    <uses-feature android:glEsVersion="0x00020000" android:required="true" />
+    <supports-gl-texture android:name="GL_OES_compressed_ETC1_RGB8_texture" />
+	<supports-gl-texture android:name="GL_OES_compressed_paletted_texture" />
+     -->
     <uses-permission android:name="android.permission.READ_CONTACTS"/>
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.CAMERA"/>
@@ -44,7 +50,7 @@
 	 
 	
     <application
-         
+        android:hardwareAccelerated="true"
         android:largeHeap="true"
         android:allowBackup="true"
         android:icon="@drawable/icon"
@@ -78,13 +84,29 @@
             android:name="com.watamidoing.Login"
             android:label="@string/title_activity_login"
             android:windowSoftInputMode="adjustResize|stateVisible" >
-<!--             <intent-filter> -->
-<!--                 <action android:name="android.intent.action.MAIN" /> -->
-<!--                   <category android:name="android.intent.category.LAUNCHER" /> -->
-<!--              </intent-filter> -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                  <category android:name="android.intent.category.LAUNCHER" />
+             </intent-filter>
 
         </activity>
-       
+
+        <!-- 
+        <activity
+            android:launchMode="singleTask"
+            android:name="com.android.gles3jni.GLES3JNIActivity"
+            android:label="@string/welcome_message"
+            android:screenOrientation="fullSensor"
+            android:configChanges="keyboardHidden|orientation"
+            android:windowSoftInputMode="adjustResize" >
+             	
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                  <category android:name="android.intent.category.LAUNCHER" />
+             </intent-filter>
+        </activity>
+         -->
+        <!-- 
         <activity
             android:launchMode="singleTask"
             android:name="com.watamidoing.nativecamera.CameraPreviewer"
@@ -98,7 +120,7 @@
                   <category android:name="android.intent.category.LAUNCHER" />
              </intent-filter>
         </activity>
-        
+         -->
         
          <activity
             android:launchMode="singleTask"

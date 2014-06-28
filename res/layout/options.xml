@@ -117,13 +117,12 @@
                 android:background="@drawable/moments_frame"
                 android:orientation="horizontal"
                 android:padding="4dp" >
-               <org.opencv.android.JavaCameraView
-          android:layout_width="fill_parent"
-          android:layout_height="fill_parent"
-          android:visibility="gone"
-          android:id="@+id/opencvCameraView"
-          opencv:show_fps="true"  opencv:camera_id="any" />
-                 
+                
+               <com.watamidoing.nativecamera.WhatAmIDoingSurfaceView
+          			android:layout_width="fill_parent"
+          			android:layout_height="fill_parent"
+          			android:visibility="gone"
+          			android:id="@+id/opencvCameraView" />
             </LinearLayout>
 
             <LinearLayout
