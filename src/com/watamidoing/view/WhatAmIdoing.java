@@ -1250,6 +1250,7 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 			org.opencv.core.Size sz = cameraPreviewData.calculateCameraFrameSize(imageWidth, imageHeight);
 			cameraRenderer.setSize(sz);
 			
+			
 			boolean result = cameraRenderer.startCamera();
 			
 			

@@ -27,17 +27,20 @@ public class CameraRenderer implements Renderer{
 	private int imageWidth;
 	private int imageHeight;
 	private NativeCommunicator nativeCommunicator;
+	private CameraPreviewerData cameraPreviewData;
 	public CameraRenderer(WhatAmIdoing whatAmIdoing, Size size,int rotation,int cameraId) {
 		super();
 		context=  whatAmIdoing;
 		this.size = size;
 		this.rotation = rotation;
 		this.cameraId = cameraId;
+		cameraPreviewData = new CameraPreviewerData();
 	}
 
 	@Override
 	public void onSurfaceCreated(GL10 arg0, EGLConfig arg1) {
 		Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
+		size = cameraPreviewData.calcualteCameraFrameSize(size);
 		Native.init((int)size.width,(int) size.height);
 		Log.i(TAG,"----------------- SURFACE CREATED: width="+size.width+"----height="+size.height);
 	}
@@ -73,6 +76,7 @@ public class CameraRenderer implements Renderer{
 
 	public boolean startCamera() {
 		
+	    Log.d(TAG,"------------- SIZE ==:"+size.toString());
 		if(!initCalled && opencvopened) { 
 			Native.initCamera((int)size.width,(int)size.height,rotation,cameraId);
 			initCalled = true;

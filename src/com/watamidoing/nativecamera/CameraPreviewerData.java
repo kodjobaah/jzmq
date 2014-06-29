@@ -12,6 +12,10 @@ public class CameraPreviewerData {
 		public CameraPreviewerData() {
 	}
 	
+		
+	public Size calcualteCameraFrameSize(Size size) {
+		return calculateCameraFrameSize((int)size.width,(int)size.height);
+	}
 	public Size calculateCameraFrameSize(int dWidth, int dHeight) {
 		
 		VideoCapture mCamera = new VideoCapture(Highgui.CV_CAP_ANDROID);
@@ -39,24 +43,17 @@ public class CameraPreviewerData {
 		for(Object size: supportedSizes){
 			int width = accessor.getWidth(size);
 			int height = accessor.getHeight(size);
+			 
+			   if (width <= maxAllowedWidth && height <= maxAllowedHeight) {
+			    if ( width <= calcWidth 
+			      && width>=(maxAllowedWidth/2)
+			      &&(dWidth%width==0||dHeight%height==0)) {
+			     calcWidth = (int) width;
+			     calcHeight = (int) height;
+			    }
+			   }
+			   
 			
-			if ((dWidth >= prevWidth) && (dWidth <= width)) {
-			
-				calcWidth= (int)width;
-				calcHeight = (int)height;
-				break;
-			}
-			
-			
-			if ((dHeight >= prevHeight) && (dHeight <= height)) {
-				
-				calcWidth= (int)width;
-				calcHeight = (int)height;
-				break;
-			}
-			
-			prevWidth = width;
-			prevHeight = height;
 		}
 		return new Size(calcWidth, calcHeight);
 	}

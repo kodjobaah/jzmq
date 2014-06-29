@@ -16,14 +16,8 @@ include  C:/Users/whatamidoing/hey/whatamidoingffmpeg/jni/zeromq/Android.mk
 
 
 include $(CLEAR_VARS)
+include C:/Users/whatamidoing/hey/whatamidoingffmpeg/jni/native/Android.mk
+
+include $(CLEAR_VARS)
 include  C:/Users/whatamidoing/hey/whatamidoingffmpeg/jni/jzmq/Android.mk
 
-include $(CLEAR_VARS)
-include C:/Users/whatamidoing/hey/whatamidoingffmpeg/jni/sang/Android.mk
-
-include $(CLEAR_VARS)
-include C:/Users/whatamidoing/hey/whatamidoingffmpeg/jni/gles3jni/Android.mk
-
-
-include $(CLEAR_VARS)
-include C:/Users/whatamidoing/hey/whatamidoingffmpeg/jni/native/Android.mk

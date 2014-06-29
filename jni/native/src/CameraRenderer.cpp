@@ -44,10 +44,7 @@
 
 #define VERTEX_POS_SIZE 3 // x, y and z
 #define VERTEX_TEXCOORD0_SIZE 2 // s and t
-#define VERTEX_COLOR_SIZE     3 // r, g, b, and (a)
 
-#define VERTEX_POS_INDX 0
-#define VERTEX_TEXCOORD0_INDX 1
 
 PFNGLEGLIMAGETARGETTEXTURE2DOESPROC glEGLImageTargetTexture2DOES;
 
@@ -94,6 +91,7 @@ static JavaVM *gJavaVM;
 static jobject gNativeObject;
 
 typedef struct {
+	GLuint renderBuffer;
 	GLuint frameBuffer;
 	GLuint texture;
 	GLint texWidth;
@@ -168,6 +166,10 @@ GLchar FRAGMENT_SHADER[] =
  "  gl_FragColor = texture2D( s_texture, v_texCoord );\n"
  "}\n";
  */
+
+
+GLuint vtxStride = sizeof ( GLfloat ) * ( VERTEX_POS_SIZE + VERTEX_TEXCOORD0_SIZE );
+GLuint nVertices = 4;
 
 GLushort indices[] = { 0, 1, 2, 0, 2, 3 };
 
@@ -300,6 +302,24 @@ static void printGlString(const char* name, GLenum s) {
 	LOG("GL %s: %s\n", name, v);
 }
 
+GLuint createTexture() {
+	GLuint texId;
+	    glGenTextures(1, &texId);
+	    glBindTexture(GL_TEXTURE_2D, texId);
+	    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1024, 1024, 0, GL_RGB,GL_UNSIGNED_BYTE, NULL);
+	    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	    glBindTexture(GL_TEXTURE_2D, 0);
+	    return texId;
+}
+
+void loadSubTexture(cv::Mat data) {
+	   glTexSubImage2D(GL_TEXTURE_2D, 0, (1024-frameWidth)/2, (1024-frameHeight)/2, frameWidth, frameHeight,
+	   GL_RGB, GL_UNSIGNED_BYTE, data.ptr());
+}
+
 GLuint LoadTexture(cv::Mat data)
 {
 
@@ -311,12 +331,6 @@ GLuint LoadTexture(cv::Mat data)
     char* rawPtr = new char[data.cols * data.rows * data.channels()];
     memcpy(rawPtr, (char*)data.data, data.cols * data.rows* data.channels());
 
-/*
-    glTexSubImage2D(GL_TEXTURE_2D, 0, (1024 - frameWidth) / 2,
-    					(1024 - frameHeight) / 2, frameWidth, frameHeight,
-    					GL_RGB,
-    					GL_UNSIGNED_BYTE, rawPtr);
-    */
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, data.cols, data.rows, 0, GL_RGB,GL_UNSIGNED_BYTE, rawPtr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -324,6 +338,51 @@ GLuint LoadTexture(cv::Mat data)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     free(rawPtr);
     return texId;
+}
+
+GLuint createRenderBuffer() {
+
+	GLuint colorRenderbuffer;
+
+	// Generates the name/id, creates and configures the Color Render Buffer.
+	glGenRenderbuffers(1, &colorRenderbuffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, colorRenderbuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_RGB, frameWidth, frameHeight);
+
+	return colorRenderbuffer;
+}
+
+GLuint createFrameBuffer() {
+
+	GLuint frameBuffer;
+
+	// Creates a name/id to our frameBuffer.
+	glGenFramebuffers(1, &frameBuffer);
+
+	// The real Frame Buffer Object will be created here,
+	// at the first time we bind an unused name/id.
+	glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
+
+	return frameBuffer;
+}
+
+void setupVBO() {
+
+
+		  GLuint v = sizeof(GLfloat );
+		  GLuint s = sizeof(GLushort);
+		  LOG("SETTING UP SIZEOFGLOAT=%d SIZEOFGLUSHOR=%d vtxString=%d nVertices=%d",v,s,vtxStride,nVertices);
+		  // Only allocate on the first draw
+	      glGenBuffers ( 2, userData.vboIds );
+	      checkGlError("glGenBuffers");
+	      glBindBuffer ( GL_ARRAY_BUFFER, userData.vboIds[0] );
+	      checkGlError("glBindBuffer--ARRAY");
+	      glBufferData ( GL_ARRAY_BUFFER,nVertices*vtxStride ,  vVertices, GL_STATIC_DRAW );
+	      checkGlError("glBindBufferData--ARRAY");
+	      glBindBuffer ( GL_ELEMENT_ARRAY_BUFFER, userData.vboIds[1] );
+	      checkGlError("glBindBuffer--ELEMENT");
+	      glBufferData ( GL_ELEMENT_ARRAY_BUFFER,sizeof (indices),indices, GL_STATIC_DRAW );
+	      checkGlError("glBindBufferData--ELEMENT");
 }
 
 JNIEXPORT void JNICALL
@@ -349,6 +408,7 @@ Java_com_watamidoing_nativecamera_Native_init(JNIEnv* env, jobject obj,
 
 	userData.programObject = createProgram(VERTEX_SHADER, FRAGMENT_SHADER);
 
+	LOG("userData.programObject=%d",userData.programObject);
 	// Get the attribute locations
 	userData.positionLoc = glGetAttribLocation(userData.programObject, "a_position");
 	checkGlError("glGetAttribLocation-positionLoc");
@@ -360,6 +420,16 @@ Java_com_watamidoing_nativecamera_Native_init(JNIEnv* env, jobject obj,
 	if (userData.baseMapLoc == 0)  {
 		LOG("--------------- UNABLE TO LOAD THE BASEMAPLOC------------------------");
 	}
+
+	setupVBO();
+	userData.textureId = createTexture();
+
+	/*
+	userData.renderBuffer = createRenderBuffer();
+	userData.frameBuffer = createFrameBuffer();
+	//Attach render buffer to frambuffer
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_RENDERBUFFER,userData.renderBuffer);
+	*/
 }
 
 JNIEXPORT void JNICALL Java_com_watamidoing_nativecamera_Native_surfaceChangedNative(
@@ -388,34 +458,47 @@ Java_com_watamidoing_nativecamera_Native_draw(JNIEnv* env, jobject obj) {
 
 		cv::cvtColor(fr, outframe, CV_BGR2RGB);
 		cv::flip(outframe, rgbFrame, 1);
-		userData.textureId = LoadTexture(rgbFrame);
+
+	    glClear(GL_COLOR_BUFFER_BIT);
+		glBindTexture(GL_TEXTURE_2D, userData.textureId);
+		loadSubTexture(rgbFrame);
+
+		//userData.textureId = LoadTexture(rgbFrame);
 	    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
 	    glViewport(0, 0, frameWidth, frameHeight);
 
 	    // Clear the color buffer
-	    glClear(GL_COLOR_BUFFER_BIT);
 
 	    // Use the program object
 	    glUseProgram(userData.programObject);
 
-	    // Load the vertex position
-	    glVertexAttribPointer(userData.positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), vVertices);
-	    // Load the texture coordinate
-	    glVertexAttribPointer(userData.texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &vVertices[3]);
+	    glBindBuffer(GL_ARRAY_BUFFER, userData.vboIds[0]);
+	    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,userData.vboIds[1]);
 
+
+	    LOG("------userData.positionLoc=%d",userData.positionLoc);
 	    glEnableVertexAttribArray(userData.positionLoc);
+	    LOG("------userData.textCoordLoc=%d",userData.texCoordLoc);
 	    glEnableVertexAttribArray(userData.texCoordLoc);
 
-	    // Bind the base map
+	    glVertexAttribPointer (userData.positionLoc, VERTEX_POS_SIZE,
+	                              GL_FLOAT, GL_FALSE, vtxStride,
+	                              ( const void * ) offset );
+
+	    offset += VERTEX_POS_SIZE * sizeof ( GLfloat );
+	    glVertexAttribPointer (userData.texCoordLoc,
+	    		VERTEX_TEXCOORD0_SIZE,
+	                              GL_FLOAT, GL_FALSE, vtxStride,
+	                              ( const void * ) offset );
+
 	    glActiveTexture(GL_TEXTURE0);
 	    glBindTexture(GL_TEXTURE_2D, userData.textureId);
 
 	    // Set the base map sampler to texture unit to 0
 	    glUniform1i(userData.baseMapLoc, 0);
 
-	    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices);
-
+	    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 	} else {
 		LOG("UNABLE TO READ FRAME");
 	}
@@ -641,16 +724,18 @@ JNIEXPORT void JNICALL Java_com_watamidoing_nativecamera_Native_initCamera(
 		JNIEnv*, jobject, jint width, jint height, jint rot, jint camId) {
 	LOG("Camera Created");
 
+
+	frameWidth = width;
+	frameHeight = height;
 	orientation = rot;
 	cameraId = camId;
 	//capture.open(CV_CAP_ANDROID + 0);
-	capture.open(cameraId);
-	 capture.set(CV_CAP_PROP_FRAME_WIDTH, width);
-	 capture.set(CV_CAP_PROP_FRAME_HEIGHT, height);
-	frameWidth = width;
-	frameHeight = height;
 	LOG("frameWidth = %d", frameWidth);
 	LOG("frameHeight = %d", frameHeight);
+	capture.open(cameraId);
+	capture.set(CV_CAP_PROP_FRAME_WIDTH, frameWidth);
+	capture.set(CV_CAP_PROP_FRAME_HEIGHT, frameHeight);
+
 
 	//boost::thread frameRetrieverThread(frameRetriever);
 	//tgroup.add_thread(&frameRetrieverThread);
