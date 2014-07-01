@@ -52,6 +52,7 @@ import android.view.ViewGroup;
 import android.widget.GridLayout;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.TableLayout.LayoutParams;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -863,6 +864,12 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 		holder.setLayoutParams(hLayoutParams);
 		momentsLayout.setLayoutParams(mLayoutParam);
 		
+		
+		GLSurfaceView surfaceView = (GLSurfaceView)momentsLayout.findViewById(R.id.opencvCameraView);
+		android.view.ViewGroup.LayoutParams sLayoutParams = surfaceView.getLayoutParams();
+		sLayoutParams.height = mLayoutParam.height;
+		sLayoutParams.width = mLayoutParam.width;
+		surfaceView.setLayoutParams(sLayoutParams);
 		if (cameraRenderer != null) {
 			org.opencv.core.Size sz = new org.opencv.core.Size(mLayoutParam.width,mLayoutParam.height);
 			cameraRenderer.setSize(sz);

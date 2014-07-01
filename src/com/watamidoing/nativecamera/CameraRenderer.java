@@ -66,7 +66,7 @@ public class CameraRenderer implements Renderer{
 
 	public void setSize(org.opencv.core.Size size) {
 		this.size = size;
-		Native.surfaceChangedNative((int)size.width,(int)size.height);
+		//Native.surfaceChangedNative((int)size.width,(int)size.height);
 	}
 
 	public void opencvOpen() {
