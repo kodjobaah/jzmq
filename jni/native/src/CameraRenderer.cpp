@@ -49,7 +49,6 @@
 #define VERTEX_POS_SIZE 3 // x, y and z
 #define VERTEX_TEXCOORD0_SIZE 2 // s and t
 
-
 PFNGLEGLIMAGETARGETTEXTURE2DOESPROC glEGLImageTargetTexture2DOES;
 
 GLuint texture;
@@ -137,9 +136,8 @@ typedef struct {
 UserData userData;
 
 /************* Examples **************************/
-
-GLchar VERTEX_SHADER[] =
-		"uniform mat4 u_projection; \n"
+// gl_Position =  u_projection * u_view * u_model * a_position;
+GLchar VERTEX_SHADER[] = "uniform mat4 u_projection; \n"
 		"uniform mat4 u_model; \n"
 		"uniform mat4 u_view; \n"
 		"attribute vec4 a_position;   \n"
@@ -147,7 +145,7 @@ GLchar VERTEX_SHADER[] =
 		"varying vec2 v_texCoord;     \n"
 		"void main()                  \n"
 		"{                            \n"
-		"   gl_Position =  u_projection * u_view * u_model * a_position; \n"
+		"    gl_Position =  a_position; \n"
 		"   v_texCoord = a_texCoord;  \n"
 		"}                            \n";
 GLchar FRAGMENT_SHADER[] =
@@ -160,12 +158,33 @@ GLchar FRAGMENT_SHADER[] =
 				"  gl_FragColor = texture2D( s_baseMap, v_texCoord );   \n"
 				"}                                                   \n";
 
-
-GLuint vtxStride = sizeof ( GLfloat ) * ( VERTEX_POS_SIZE + VERTEX_TEXCOORD0_SIZE );
+GLuint vtxStride = sizeof(GLfloat) * ( VERTEX_POS_SIZE + VERTEX_TEXCOORD0_SIZE);
 GLuint nVertices = 4;
 
 GLushort indices[] = { 0, 1, 2, 0, 2, 3 };
 
+
+GLfloat vVertices[] = {
+                // X, Y, Z, U, V
+                -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+                 1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+                -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+                 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+};
+
+/*
+GLfloat vVertices[] = {
+     -1.0f, -1.0f,0.0f,
+     1.0f, 1.0f,
+     1.0f, -1.0f,0.0f,
+     1.0f, 0.0f,
+     -1.0f,  1.0f,0.0f,
+     0.0f,  1.0f,
+     1.0f,  1.0f,0.0f,
+     0.0f,  0.0f,
+ };
+ */
+/*
 GLfloat vVertices[] = { -0.5f, 0.5f, 0.0f,  // Position 0
 		0.0f, 0.0f,        // TexCoord 0
 		-0.5f, -0.5f, 0.0f, // Position 1
@@ -175,7 +194,7 @@ GLfloat vVertices[] = { -0.5f, 0.5f, 0.0f,  // Position 0
 		0.5f, 0.5f, 0.0f,  // Position 3
 		1.0f, 0.0f         // TexCoord 3
 		};
-
+*/
 EGLContext mEglContext;
 EGLDisplay mEglDisplay = EGL_NO_DISPLAY;
 
@@ -195,8 +214,8 @@ GLuint createShader(GLenum shaderType, const char* src);
 GLuint createProgram(const char* vtxSrc, const char* fragSrc);
 bool checkGlError(const char* funcName);
 void drawImage(cv::Mat data);
-void translateM(float m[], int mOffset,float x, float y, float z);
-void printMatrix(float  m[]);
+void translateM(float m[], int mOffset, float x, float y, float z);
+void printMatrix(float m[]);
 void checkBufferStatus();
 /*******************************EXAMPLES BEGIN ****************************/
 bool checkGlError(const char* funcName) {
@@ -299,127 +318,140 @@ static void printGlString(const char* name, GLenum s) {
 
 GLuint createTexture() {
 	GLuint texId;
-	    glGenTextures(1, &texId);
-	    glBindTexture(GL_TEXTURE_2D, texId);
-	   // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1024, 1024, 0, GL_RGB,GL_UNSIGNED_BYTE, NULL);
-	    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, frameWidth, frameHeight, 0, GL_RGB,GL_UNSIGNED_BYTE, NULL);
-	    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glGenTextures(1, &texId);
+	glBindTexture(GL_TEXTURE_2D, texId);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, frameWidth, frameHeight, 0, GL_RGB,
+			GL_UNSIGNED_BYTE, NULL);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	    glBindTexture(GL_TEXTURE_2D, 0);
-	    return texId;
+	glBindTexture(GL_TEXTURE_2D, 0);
+	return texId;
 }
 
 void loadSubTexture(cv::Mat data) {
-	   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, screenWidth, screenHeight,
-	   GL_RGB, GL_UNSIGNED_BYTE, data.ptr());
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, screenWidth, screenHeight,
+	GL_RGB, GL_UNSIGNED_BYTE, data.ptr());
 }
 
+void renderToTexture(cv::Mat rgbFrame) {
+
+	GLuint offset = 0.0;
+	glBindFramebuffer(GL_FRAMEBUFFER, userData.frameBuffer);
+	glUseProgram(userData.programObject);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, userData.textureId);
+
+	glViewport(0, 0, frameWidth, frameHeight);
+	glClearColor(1.0f, 0.0f, 0.0f, 0.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	loadSubTexture(rgbFrame);
+
+	glBindBuffer(GL_ARRAY_BUFFER, userData.vboIds[0]);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, userData.vboIds[1]);
+
+	glEnableVertexAttribArray(userData.positionLoc);
+	glEnableVertexAttribArray(userData.texCoordLoc);
+
+	glVertexAttribPointer(userData.positionLoc, VERTEX_POS_SIZE,
+	GL_FLOAT, GL_FALSE, vtxStride, (const void *) offset);
+
+	offset += VERTEX_POS_SIZE * sizeof(GLfloat);
+	glVertexAttribPointer(userData.texCoordLoc,
+	VERTEX_TEXCOORD0_SIZE,
+	GL_FLOAT, GL_FALSE, vtxStride, (const void *) offset);
+
+	// Set the base map sampler to texture unit to 0
+	/*
+	glUniform1i(userData.baseMapLoc, 0);
+
+	glUniformMatrix4fv(userData.modelLoc, 1, GL_FALSE,
+			glm::value_ptr(userData.View));
+	glUniformMatrix4fv(userData.viewLoc, 1, GL_FALSE,
+			glm::value_ptr(userData.View));
+	glUniformMatrix4fv(userData.projectionLoc, 1, GL_FALSE,
+			glm::value_ptr(userData.Projection));
+
+	 */
+	//glDrawElements(GL_TRIANGLE_STRIP, 6, GL_UNSIGNED_SHORT, 0);
+	glDrawArrays(GL_TRIANGLE_STRIP,0,4);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+}
 GLuint createRenderBuffer() {
 
+		// create a framebuffer object, you need to delete them when program exits.
+	glGenFramebuffers(1, &userData.frameBuffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, userData.frameBuffer);
 
-	LOG("--CREATE RENDER BUFFER frameWidth=%d, frameHeight=%d", frameWidth, frameHeight);
+	glGenRenderbuffers(1, &userData.renderBuffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, userData.renderBuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, frameWidth,
+			frameHeight);
+	// attach a renderbuffer to depth attachment point
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+			GL_RENDERBUFFER, userData.renderBuffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
-	 // create a framebuffer object, you need to delete them when program exits.
-	  glGenFramebuffers(1, &userData.frameBuffer);
-	  checkGlError("glGenFrameBuffers");
-	  glBindFramebuffer(GL_FRAMEBUFFER, userData.frameBuffer);
-	  checkGlError("glBindFramebuffers");
+	//userData.textureId = createTexture();
+	// attach a texture to FBO color attachement point
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+			userData.textureId, 0);
 
-	        // create a renderbuffer object to store depth info
-	        // NOTE: A depth renderable image should be attached the FBO for depth test.
-	        // If we don't attach a depth renderable image to the FBO, then
-	        // the rendering output will be corrupted because of missing depth test.
-	        // If you also need stencil test for your rendering, then you must
-	        // attach additional image to the stencil attachement point, too.
-	        glGenRenderbuffers(1, &userData.renderBuffer);
-	        checkGlError("glGenRenderBuffers");
-	        glBindRenderbuffer(GL_RENDERBUFFER, userData.renderBuffer);
-	        checkGlError("glBindRenderBuffer");
-	        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, frameWidth, frameHeight);
-	        checkGlError("glRenderbufferStorage");
-	        // attach a renderbuffer to depth attachment point
-	     	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER,userData.renderBuffer);
-	     	checkGlError("glFramebufferRenderBuffer");
-	        glBindRenderbuffer(GL_RENDERBUFFER, 0);
-	        checkGlError("glBindRenderBuffer");
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+			GL_RENDERBUFFER, userData.renderBuffer);
 
-	    	//userData.textureId = createTexture();
-	        // attach a texture to FBO color attachement point
-	        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, userData.textureId, 0);
-	        checkGlError("glFramebufferTexture2D");
-
-	        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER,userData.renderBuffer);
-	        checkGlError("glFramebufferRenderBuffer");
-
-	        checkBufferStatus();
-	        glBindTexture(GL_TEXTURE_2D, 0);
-	        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	checkBufferStatus();
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void checkBufferStatus() {
 	GLuint returned = (glCheckFramebufferStatus(GL_FRAMEBUFFER));
 
-	if(returned != GL_FRAMEBUFFER_COMPLETE)
-	{
-	    LOG("ERROR CODE RETURNED FROM CHECKING BUFFER STATUS %d -->", returned);
-	    switch (returned) {
-	        case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
-	            LOG("Incomplete: Dimensions");
-	            break;
+	if (returned != GL_FRAMEBUFFER_COMPLETE) {
+		LOG("ERROR CODE RETURNED FROM CHECKING BUFFER STATUS %d -->", returned);
+		switch (returned) {
+		case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
+			LOG("Incomplete: Dimensions");
+			break;
 
-	        case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE_IMG:
-	            LOG("Incomplete: Formats");
-	            break;
+		case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE_IMG:
+			LOG("Incomplete: Formats");
+			break;
 
-	        case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-	            LOG("Incomplete: Missing Attachment");
-	            break;
+		case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+			LOG("Incomplete: Missing Attachment");
+			break;
 
-	        case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-	            LOG("Incomplete: Attachment");
-	            break;
+		case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+			LOG("Incomplete: Attachment");
+			break;
 
-	        default:
-	            LOG("-- NOTHING Complete");
-	            break;
-	    }
+		default:
+			LOG("-- NOTHING Complete");
+			break;
+		}
 	}
 
-}
-GLuint createFrameBuffer() {
-
-	GLuint frameBuffer;
-
-	// Creates a name/id to our frameBuffer.
-	glGenFramebuffers(1, &frameBuffer);
-
-	// The real Frame Buffer Object will be created here,
-	// at the first time we bind an unused name/id.
-	glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
-
-	return frameBuffer;
 }
 
 void setupVBO() {
 
-
-		  GLuint v = sizeof(GLfloat );
-		  GLuint s = sizeof(GLushort);
-		  LOG("SETTING UP SIZEOFGLOAT=%d SIZEOFGLUSHOR=%d vtxString=%d nVertices=%d",v,s,vtxStride,nVertices);
-		  // Only allocate on the first draw
-	      glGenBuffers ( 2, userData.vboIds );
-	      checkGlError("glGenBuffers");
-	      glBindBuffer ( GL_ARRAY_BUFFER, userData.vboIds[0] );
-	      checkGlError("glBindBuffer--ARRAY");
-	      glBufferData ( GL_ARRAY_BUFFER,nVertices*vtxStride ,  vVertices, GL_STATIC_DRAW );
-	      checkGlError("glBindBufferData--ARRAY");
-	      glBindBuffer ( GL_ELEMENT_ARRAY_BUFFER, userData.vboIds[1] );
-	      checkGlError("glBindBuffer--ELEMENT");
-	      glBufferData ( GL_ELEMENT_ARRAY_BUFFER,sizeof (indices),indices, GL_STATIC_DRAW );
-	      checkGlError("glBindBufferData--ELEMENT");
+	GLuint v = sizeof(GLfloat);
+	GLuint s = sizeof(GLushort);
+	// Only allocate on the first draw
+	glGenBuffers(2, userData.vboIds);
+	glBindBuffer( GL_ARRAY_BUFFER, userData.vboIds[0]);
+	glBufferData( GL_ARRAY_BUFFER, nVertices * vtxStride, vVertices,
+			GL_STATIC_DRAW);
+	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, userData.vboIds[1]);
+	glBufferData( GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
+			GL_STATIC_DRAW);
 }
 
 JNIEXPORT void JNICALL
@@ -446,37 +478,40 @@ Java_com_watamidoing_nativecamera_Native_init(JNIEnv* env, jobject obj,
 
 	userData.programObject = createProgram(VERTEX_SHADER, FRAGMENT_SHADER);
 
-	LOG("userData.programObject=%d",userData.programObject);
 	// Get the attribute locations
-	userData.positionLoc = glGetAttribLocation(userData.programObject, "a_position");
+	userData.positionLoc = glGetAttribLocation(userData.programObject,
+			"a_position");
 	checkGlError("glGetAttribLocation-positionLoc");
-	userData.texCoordLoc = glGetAttribLocation(userData.programObject, "a_texCoord");
+	userData.texCoordLoc = glGetAttribLocation(userData.programObject,
+			"a_texCoord");
 	checkGlError("glGetAttribLocation-textLoc");
-	    // Get the sampler location
-	userData.baseMapLoc = glGetUniformLocation(userData.programObject, "s_baseMap");
-	userData.projectionLoc  = glGetUniformLocation(userData.programObject, "u_projection");
-	userData.modelLoc  = glGetUniformLocation(userData.programObject, "u_model");
-	userData.viewLoc  = glGetUniformLocation(userData.programObject, "u_view");
-	LOG("projectionLoc=%d, modelLoc=%d viewLoc=%d a_postion=%d, a_textCord=%d",userData.projectionLoc, userData.modelLoc, userData.viewLoc,userData.positionLoc,userData.texCoordLoc);
-	if (userData.baseMapLoc == 0)  {
-		LOG("--------------- UNABLE TO LOAD THE BASEMAPLOC------------------------");
-	}
-
-	setupVBO();
-
+	// Get the sampler location
+	userData.baseMapLoc = glGetUniformLocation(userData.programObject,
+			"s_baseMap");
 
 	/*
-	userData.renderBuffer = createRenderBuffer();
-	userData.frameBuffer = createFrameBuffer();
-	//Attach render buffer to frambuffer
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_RENDERBUFFER,userData.renderBuffer);
+	userData.projectionLoc = glGetUniformLocation(userData.programObject,
+			"u_projection");
+	userData.modelLoc = glGetUniformLocation(userData.programObject, "u_model");
+	userData.viewLoc = glGetUniformLocation(userData.programObject, "u_view");
+	LOG("projectionLoc=%d, modelLoc=%d viewLoc=%d a_postion=%d, a_textCord=%d",
+			userData.projectionLoc, userData.modelLoc, userData.viewLoc,
+			userData.positionLoc, userData.texCoordLoc);
 	*/
+	if (userData.baseMapLoc == 0) {
+		LOG(
+				"--------------- UNABLE TO LOAD THE BASEMAPLOC------------------------");
+	}
+
+
+	setupVBO();
+	userData.textureId = createTexture();
+	createRenderBuffer();
 }
 
 JNIEXPORT void JNICALL Java_com_watamidoing_nativecamera_Native_initCamera(
 		JNIEnv*, jobject, jint width, jint height, jint rot, jint camId) {
 	LOG("Camera Created");
-
 
 	orientation = rot;
 	cameraId = camId;
@@ -489,7 +524,22 @@ JNIEXPORT void JNICALL Java_com_watamidoing_nativecamera_Native_initCamera(
 	screenWidth = width;
 	screenHeight = height;
 
-
+	// Projection matrix : 45° Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
+	//glm::mat4 Projection = glm::perspective(45.0f, float(frameWidth / frameHeight), 0.1f, 50.0f);
+	glm::mat4 Projection = glm::ortho<GLfloat>( 0.0, frameWidth, frameHeight, 0.0, 1.0, -1.0 );
+	glm::mat4 View = glm::mat4();
+	/*
+	glm::mat4 View       = glm::lookAt(
+								glm::vec3(0,-3,1), // Camera is at (4,3,-3), in World Space
+								glm::vec3(0,0,0), // and looks at the origin
+								glm::vec3(1,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
+						   );*/
+	// Model matrix : an identity matrix (model will be at the origin)
+	glm::mat4 Model      = glm::mat4();
+	// Our ModelViewProjection : multiplication of our 3 matrices
+	//userData.Projection = Projection * View * Model; // Remember, matrix multiplication is the other way around
+	userData.Projection = glm::ortho(0.1f, float(frameWidth), float(frameHeight), 0.1f);
+	//userData.Projection=glm::perspective(100.0f, (float)screenWidth/screenHeight, 1.0f, 100.0f);
 	//boost::thread frameRetrieverThread(frameRetriever);
 	//tgroup.add_thread(&frameRetrieverThread);
 
@@ -501,31 +551,28 @@ JNIEXPORT void JNICALL Java_com_watamidoing_nativecamera_Native_surfaceChangedNa
 
 	frameHeight = height;
 	frameWidth = width;
-	float aspect = frameWidth / frameHeight;
-	float bt = (float) tan(double(45 / 2));
-	float lr = bt * aspect;
+
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
-	//userData.Projection = glm::frustum(-lr * 0.1f, lr * 0.1f, -bt * 0.1f, bt * 0.1f, 0.1f,
-//   100.0f);
+
 
 //	userData.Projection = glm::perspective(20.1f, aspect, 0.1f, 1.0f);
 //	userData.Projection = glm::perspective(45.0f, aspect, 1.0f, 100.0f);
 //	userData.Projection = glm::ortho(0, frameWidth, 0, frameHeight);
+	glViewport(0, 0, width, height);
+
+	//userData.Projection = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
 	//userData.Model = glm::translate(userData.Model, glm::vec3(0.1f, 0.2f, 0.5f));
 
-	userData.textureId = createTexture();
-	//createRenderBuffer();
 }
 
-
-void printMatrix(float  m[]) {
+void printMatrix(float m[]) {
 
 	int i;
 	LOG("---matix begin--");
-	for(i=0; i < 16;i++) {
-		LOG("%.2f",m[i]);
+	for (i = 0; i < 16; i++) {
+		LOG("%.2f", m[i]);
 	}
 	LOG("--matrix-end");
 }
@@ -538,61 +585,59 @@ Java_com_watamidoing_nativecamera_Native_draw(JNIEnv* env, jobject obj) {
 	GLuint textureId;
 	cv::Mat fr;
 	GLuint offset = 0;
-	LOG("READING FRAME frameWidth=%d frameHeight=%d", frameWidth,frameHeight);
+	LOG("READING FRAME frameWidth=%d frameHeight=%d", frameWidth, frameHeight);
 //	if (sendToDisplayFrame.pop(fr)) {
 	if (capture.isOpened() && capture.read(inframe)) {
 		LOG("READ FRAME");
 		inframe.copyTo(fr);
 		cv::cvtColor(fr, outframe, CV_BGR2RGB);
 		cv::flip(outframe, rgbFrame, 1);
-	    // Use the program object
-	    glUseProgram(userData.programObject);
 
-	    glActiveTexture(GL_TEXTURE0);
-	    glBindTexture(GL_TEXTURE_2D, userData.textureId);
+		renderToTexture(rgbFrame);
 
-	   /// glBindFramebuffer(GL_FRAMEBUFFER, userData.frameBuffer);
-		glViewport(0, 0, frameWidth, frameHeight);
-		glClearColor(1.0f, 0.0f, 0.0f, 0.0f);
+		//setProjection(frameWidth,frameHeight);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		// Use the program object
+		glUseProgram(userData.programObject);
+
+		//glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, userData.textureId);
+
+		/// glBindFramebuffer(GL_FRAMEBUFFER, userData.frameBuffer);
+		//glViewport(0, 0, frameWidth, frameHeight);
+		//glClearColor(1.0f, 0.0f, 0.0f, 0.0f);
 		//userData.textureId = LoadTexture(rgbFrame);
 
-	    loadSubTexture(rgbFrame);
+		//loadSubTexture(rgbFrame);
+		glBindBuffer(GL_ARRAY_BUFFER, userData.vboIds[0]);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, userData.vboIds[1]);
 
+		glEnableVertexAttribArray(userData.positionLoc);
+		glEnableVertexAttribArray(userData.texCoordLoc);
 
-	    glBindBuffer(GL_ARRAY_BUFFER, userData.vboIds[0]);
-	    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,userData.vboIds[1]);
+		glVertexAttribPointer(userData.positionLoc, VERTEX_POS_SIZE,
+		GL_FLOAT, GL_FALSE, vtxStride, (const void *) offset);
 
+		offset += VERTEX_POS_SIZE * sizeof(GLfloat);
+		glVertexAttribPointer(userData.texCoordLoc,
+		VERTEX_TEXCOORD0_SIZE,
+		GL_FLOAT, GL_FALSE, vtxStride, (const void *) offset);
 
-	    LOG("------userData.positionLoc=%d",userData.positionLoc);
-	    glEnableVertexAttribArray(userData.positionLoc);
-	    LOG("------userData.textCoordLoc=%d",userData.texCoordLoc);
-	    glEnableVertexAttribArray(userData.texCoordLoc);
+		// Set the base map sampler to texture unit to 0
+		glUniform1i(userData.baseMapLoc, 0);
 
-	    glVertexAttribPointer(userData.positionLoc, VERTEX_POS_SIZE,
-	                              GL_FLOAT, GL_FALSE, vtxStride,
-	                              ( const void * ) offset );
+		glUniformMatrix4fv(userData.modelLoc, 1, GL_FALSE,
+				glm::value_ptr(userData.View));
+		glUniformMatrix4fv(userData.viewLoc, 1, GL_FALSE,
+				glm::value_ptr(userData.View));
+		glUniformMatrix4fv(userData.projectionLoc, 1, GL_FALSE,
+				glm::value_ptr(userData.Projection));
 
-	    offset += VERTEX_POS_SIZE * sizeof ( GLfloat );
-	    glVertexAttribPointer(userData.texCoordLoc,
-	    		VERTEX_TEXCOORD0_SIZE,
-	                              GL_FLOAT, GL_FALSE, vtxStride,
-	                              ( const void * ) offset );
+		//glFrontFace(GL_CW);
+		//glDrawElements(GL_TRIANGLE_STRIP, 6, GL_UNSIGNED_SHORT, 0);
+		glDrawArrays(GL_TRIANGLE_STRIP,0,4);
 
-
-	    // Set the base map sampler to texture unit to 0
-	    glUniform1i(userData.baseMapLoc, 0);
-
-
-	    glUniformMatrix4fv(userData.modelLoc, 1, GL_FALSE, glm::value_ptr(userData.View));
-	    glUniformMatrix4fv(userData.viewLoc, 1, GL_FALSE, glm::value_ptr(userData.View));
-	    glUniformMatrix4fv(userData.projectionLoc, 1, GL_FALSE, glm::value_ptr(userData.Projection));
-
-	    glFrontFace(GL_CW);
-
-	    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
-
-	    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	} else {
 		LOG("UNABLE TO READ FRAME");
 	}
@@ -804,16 +849,6 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
 	return JNI_VERSION_1_6; /* the required JNI version */
 }
 
-JNIEXPORT void JNICALL Java_com_watamidoing_nativecamera_Native_surfaceInit(
-		JNIEnv *, jobject) {
-	LOG("INTI SURFACE 1");
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	LOG("INTI SURFACE 2");
-	glClearDepthf(1.0f);
-	LOG("INTI SURFACE 4");
-//	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-	LOG("END INTI SURFACE");
-}
 
 JNIEXPORT void JNICALL Java_com_watamidoing_nativecamera_Native_surfaceChanged(
 		JNIEnv*, jobject, jint width, jint height, jint orien) {
@@ -831,35 +866,12 @@ JNIEXPORT void JNICALL Java_com_watamidoing_nativecamera_Native_surfaceChanged(
 
 	LOG("screenWidth = %d", screenWidth);
 	LOG("screenHeight = %d", screenHeight);
-	//glMatrixMode(GL_PROJECTION);
-	//LOG("2");
-	//glLoadIdentity();
-	//LOG("3");
-	//float aspect = screenWidth / screenHeight;
-	//float bt = (float) tan(double(45 / 2));
-	//float lr = bt * aspect;
-	//glFrustumf(-lr * 0.1f, lr * 0.1f, -bt * 0.1f, bt * 0.1f, 0.1f, 100.0f);
-	//LOG("4");
-	//glMatrixMode(GL_MODELVIEW);
-	//LOG("5");
-	//glLoadIdentity();
-	//LOG("6");
-	LOG("1");
 	glEnable(GL_TEXTURE_2D);
-	LOG("2");
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	LOG("3");
 	glEnable(GL_CULL_FACE);
-	LOG("4");
-	//glShadeModel(GL_SMOOTH);
-	LOG("5");
 	glClearDepthf(1.0f);
-	LOG("6");
 	glEnable(GL_DEPTH_TEST);
-	LOG("7");
 	glDepthFunc(GL_ALWAYS);
-	LOG("BEFORE CREATE TEXTURE");
-
 }
 
 JNIEXPORT void JNICALL Java_com_watamidoing_nativecamera_Native_releaseCamera(
@@ -867,22 +879,6 @@ JNIEXPORT void JNICALL Java_com_watamidoing_nativecamera_Native_releaseCamera(
 	LOG("Camera Released");
 	capture.release();
 	//tgroup.interrupt_all();
-	destroyTexture();
-
-}
-
-void destroyTexture() {
-	LOG("Texture destroyed");
-	glDeleteTextures(1, &texture);
-}
-
-JNIEXPORT void JNICALL Java_com_watamidoing_nativecamera_Native_renderBackground(
-		JNIEnv*, jobject, jboolean sendData) {
-	drawBackground(sendData);
-}
-
-void drawBackground(bool sendData) {
-
 }
 
 void frameRetriever() {
