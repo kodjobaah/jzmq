@@ -4,14 +4,11 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.opencv.android.BaseLoaderCallback;
-import org.opencv.android.JavaCameraView;
 import org.opencv.android.LoaderCallbackInterface;
-import org.opencv.android.NativeCameraView;
 import org.opencv.android.OpenCVLoader;
 import org.scribe.model.Token;
 
 import twitter4j.auth.AccessToken;
-import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.Context;
@@ -52,7 +49,6 @@ import android.view.ViewGroup;
 import android.widget.GridLayout;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
-import android.widget.TableLayout.LayoutParams;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -82,27 +78,31 @@ import com.watamidoing.invite.twitter.TwitterAuthorization;
 import com.watamidoing.nativecamera.CameraPreviewerData;
 import com.watamidoing.nativecamera.CameraRenderer;
 import com.watamidoing.nativecamera.Native;
+import com.watamidoing.nativecamera.NativeCommunicator;
 import com.watamidoing.nativecamera.WhatAmIDoingSurfaceView;
 import com.watamidoing.nativecamera.WhatAmIdoingEGLConfigChooser;
 import com.watamidoing.nativecamera.WhatAmIdoingEglContextFactory;
+import com.watamidoing.reeiver.callbacks.MessagesSentController;
 import com.watamidoing.reeiver.callbacks.TotalWatchersController;
 import com.watamidoing.reeiver.callbacks.XMPPConnectionController;
 import com.watamidoing.reeiver.callbacks.ZeroMQController;
 import com.watamidoing.tasks.WAIDLocationListener;
+import com.watamidoing.total.receivers.MessagesSentReceiver;
 import com.watamidoing.total.receivers.TotalWatchersReceiver;
 import com.watamidoing.total.service.TotalUsersWatchingTask;
 import com.watamidoing.total.service.TotalWatchersService;
 import com.watamidoing.transport.receivers.NetworkChangeReceiver;
+import com.watamidoing.transport.receivers.ZeroMQServiceStartedReceiver;
 import com.watamidoing.transport.receivers.ZeroMQServiceStoppedReceiver;
 import com.watamidoing.transport.service.ZeroMQService;
 import com.watamidoing.transport.service.ZeroMQServiceConnection;
+import com.watamidoing.transport.service.ZeroMQServiceNative;
 import com.watamidoing.utils.Emoji;
 import com.watamidoing.utils.ScreenDimension;
 import com.watamidoing.utils.UtilsWhatAmIdoing;
-import com.watamidoing.nativecamera.NativeCommunicator;
 
 public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
-		XMPPConnectionController, TotalWatchersController {
+		XMPPConnectionController, TotalWatchersController, MessagesSentController {
 
 	public static final Uri FRIEND_PICKER = Uri.parse("picker://friend");
 
@@ -115,7 +115,7 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 	private static final String STOP_CAMERA = "Stop Camera";
 	private static final String STOP_SHARING = "Stop Sharing";
 	private static final String START_SHARING = "Start Sharing";
-	
+
 	private static final String VIDEO_START_STATE = "waid-video-start-state";
 
 	private static final String VIDEO_SHARING_STATE = "waid-video-sharing-state";
@@ -179,6 +179,8 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 	private ChatParticipantReceiver chatParticipantReceiver;
 
 	protected TotalWatchersReceiver totalWatchersReceiver;
+	
+	protected MessagesSentReceiver messagesSentReceiver;
 
 	private XMPPServiceStoppedReceiver xmppServiceStoppedReceiver;
 
@@ -200,27 +202,23 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 
 	protected NativeCommunicator nativeCommunicator;
 
-	
-	/*
-	static {
-		if (!OpenCVLoader.initDebug())) {
-			Log.e(TAG, "-------------------- UNABLE TO OPEN -- OPEN CV");
-		}else {
-			System.loadLibrary("NativeCamera");
-		}
-	}
+	protected ZeroMQServiceStartedReceiver serviceStartedReceiver;
 
-	*/
+	/*
+	 * static { if (!OpenCVLoader.initDebug())) { Log.e(TAG,
+	 * "-------------------- UNABLE TO OPEN -- OPEN CV"); }else {
+	 * System.loadLibrary("NativeCamera"); } }
+	 */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		activity = this;
-		
 
 		setContentView(R.layout.options);
 		mainLayout = (LinearLayout) activity.findViewById(R.id.momemts_frame);
-		//cameraView = new WhatAmIDoingSurfaceView(activity);
-		cameraView = (WhatAmIDoingSurfaceView) mainLayout.findViewById(R.id.opencvCameraView);
+		// cameraView = new WhatAmIDoingSurfaceView(activity);
+		cameraView = (WhatAmIDoingSurfaceView) mainLayout
+				.findViewById(R.id.opencvCameraView);
 
 		mLoaderCallback = new BaseLoaderCallback(this) {
 			@Override
@@ -228,49 +226,51 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 				switch (status) {
 				case LoaderCallbackInterface.SUCCESS: {
 					Log.i(TAG, "OpenCV loaded successfully");
-		
-					//cameraView.setPreserveEGLContextOnPause(true);
-					//mainLayout.addView(cameraView);
-					//cameraView.setL
-					//cameraView =  (WhatAmIDoingSurfaceView)mainLayout.findViewById(R.id.opencvCameraView);
 
-					ViewGroup.LayoutParams params = mainLayout.getLayoutParams();
+					// cameraView.setPreserveEGLContextOnPause(true);
+					// mainLayout.addView(cameraView);
+					// cameraView.setL
+					// cameraView =
+					// (WhatAmIDoingSurfaceView)mainLayout.findViewById(R.id.opencvCameraView);
+
+					ViewGroup.LayoutParams params = mainLayout
+							.getLayoutParams();
 					// change width of the params e.g. 50dp
 					ScreenDimension dimension = UtilsWhatAmIdoing
 							.getScreenDimensions(activity);
 
-					params.width = Double.valueOf(dimension.getDpHeightPixels() * 0.8)
-									.intValue();
-					params.height = Double.valueOf(dimension.getDpWidthPixels() * 0.5)
-									.intValue();
-					
-					//cameraView.setZOrderMediaOverlay(true);
-					org.opencv.core.Size size = new org.opencv.core.Size(params.width, params.height);
-					
-					
-					
-					
-					if(cameraRenderer == null) {
+					params.width = Double.valueOf(
+							dimension.getDpHeightPixels() * 0.8).intValue();
+					params.height = Double.valueOf(
+							dimension.getDpWidthPixels() * 0.5).intValue();
+
+					// cameraView.setZOrderMediaOverlay(true);
+					org.opencv.core.Size size = new org.opencv.core.Size(
+							params.width, params.height);
+
+					if (cameraRenderer == null) {
 						WhatAmIdoingEglContextFactory eglContextFactory = new WhatAmIdoingEglContextFactory();
 						cameraView.setEGLContextFactory(eglContextFactory);
 						cameraView.setEGLConfigChooser(true);
-					
+
 						WhatAmIdoingEGLConfigChooser eglConfigChooser = new WhatAmIdoingEGLConfigChooser();
 						cameraView.setEGLConfigChooser(eglConfigChooser);
-						
-						
-					//cameraView.setEGLContextClientVersion(2);
-					cameraRenderer = new CameraRenderer(activity,size,getResources().getConfiguration().orientation,cameraId);
-					cameraView.setRenderer(cameraRenderer);
-					cameraView.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
-					cameraView.setVisibility(SurfaceView.VISIBLE);
-					nativeCommunicator = new NativeCommunicator(activity);
-					cameraRenderer.opencvOpen(nativeCommunicator);
+
+						// cameraView.setEGLContextClientVersion(2);
+						cameraRenderer = new CameraRenderer(activity, size,
+								getResources().getConfiguration().orientation,
+								cameraId);
+						cameraView.setRenderer(cameraRenderer);
+						cameraView
+								.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
+						cameraView.setVisibility(SurfaceView.VISIBLE);
+						nativeCommunicator = new NativeCommunicator(activity);
+						cameraRenderer.opencvOpen(nativeCommunicator);
 					}
 					activity.onWindowFocusChanged(true);
-					
 					cameraView.onResume();
-					
+					cameraRenderer.setVideoStart(videoStart);
+
 					// cameraView.enableView();
 				}
 					break;
@@ -282,9 +282,6 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 			}
 		};
 
-		
-		
-		
 		/*
 		 * WifiManager wifiManager =
 		 * (WifiManager)this.getSystemService(Context.WIFI_SERVICE);
@@ -303,7 +300,7 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 				videoSharing = vidSharing;
 			}
 		}
-	
+
 		if (android.os.Build.VERSION.SDK_INT > 8) {
 			StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
 					.permitAll().build();
@@ -312,7 +309,6 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 
 		zeroMQServiceConnection = new ZeroMQServiceConnection(this, this);
 		xmppServiceConnection = new XMPPServiceConnection(this, this);
-		
 
 		// Setting up camera selection
 		int cameraCount = 0;
@@ -342,25 +338,22 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 			cameraId = backCameraId;
 		}
 
-				
 		/*
-		cameraView = (JavaCameraView) mainLayout
-				.findViewById(R.id.opencvCameraView);
-	
-		cameraView.enableFpsMeter();
-		opencvCameraListener = new OpenCvCameraListener(this);
-		opencvCameraListener.setCameraView(cameraView);
-		cameraView.setCvCameraViewListener(opencvCameraListener);
-		cameraView.setVisibility(SurfaceView.VISIBLE);
-
-		*/
+		 * cameraView = (JavaCameraView) mainLayout
+		 * .findViewById(R.id.opencvCameraView);
+		 * 
+		 * cameraView.enableFpsMeter(); opencvCameraListener = new
+		 * OpenCvCameraListener(this);
+		 * opencvCameraListener.setCameraView(cameraView);
+		 * cameraView.setCvCameraViewListener(opencvCameraListener);
+		 * cameraView.setVisibility(SurfaceView.VISIBLE);
+		 */
 		GridLayout gl = (GridLayout) this.findViewById(R.id.video_display);
 		gl.requestLayout();
 
-				/*
-		cameraView.disableView();
-		cameraView.disableFpsMeter();
-		*/
+		/*
+		 * cameraView.disableView(); cameraView.disableFpsMeter();
+		 */
 
 	}
 
@@ -463,7 +456,7 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 		ImageButton startVideo = (ImageButton) activity
 				.findViewById(R.id.start_video);
 
-//		cameraView.disableView();
+		// cameraView.disableView();
 
 		/*
 		 * if (camera != null) { camera.stopPreview(); }
@@ -591,7 +584,8 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 		runOnUiThread(new Thread(new Runnable() {
 			private IntentFilter filterServiceStoppedReceiver;
 			private IntentFilter filterTotalWatchersReceiver;
-
+			private IntentFilter filterMessagesSentReceiver;
+			
 			public void run() {
 
 				ImageButton startTransmission = (ImageButton) activity
@@ -617,6 +611,17 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 					registerReceiver(totalWatchersReceiver,
 							filterTotalWatchersReceiver);
 				}
+				
+				
+				if (messagesSentReceiver == null) {
+					filterMessagesSentReceiver = new IntentFilter(
+							MessagesSentReceiver.MESSAGES_SENT_RECEIVER);
+					filterMessagesSentReceiver
+							.addCategory(Intent.CATEGORY_DEFAULT);
+					messagesSentReceiver = new MessagesSentReceiver(activity);
+					registerReceiver(messagesSentReceiver,
+							filterMessagesSentReceiver);
+				}
 
 				if (serviceStoppedReceiver == null) {
 					filterServiceStoppedReceiver = new IntentFilter(
@@ -633,7 +638,7 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 					registerReceiver(serviceStoppedReceiver,
 							filterServiceStoppedReceiver);
 				}
-				
+
 				doBindService();
 
 			}
@@ -649,16 +654,30 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 		runOnUiThread(new Thread(new Runnable() {
 
 			private IntentFilter filterServiceStoppedReceiver;
+			private IntentFilter filterServiceStartedReceiver;
 			private IntentFilter filterRegisterReceiver;
 			private IntentFilter filterTotalWatchersReceiver;
-
+			private IntentFilter filterMessagesSentReceiver;
+			
 			public void run() {
 
 				ImageButton startTransmission = (ImageButton) activity
 						.findViewById(R.id.start_transmission);
 
+				
+				String pUrl = activity.getResources().getString(R.string.publish_url);
+
+
+
+				/*
+				Authentication auth = DatabaseHandler.getInstance(activity)
+						.getDefaultAuthentication();
+				Log.d(TAG,"pUrl="+pUrl+":---:authToken="+auth.getToken());
+				Native.loadlibs();
+				Native.startZeromq(pUrl, auth.getToken());
+				*/
 				Intent msgIntent = new Intent(activity,
-						com.watamidoing.transport.service.ZeroMQService.class);
+						com.watamidoing.transport.service.ZeroMQServiceNative.class);
 
 				Intent totalWatchersIntent = new Intent(
 						activity,
@@ -674,7 +693,7 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 					} else {
 						cameraHasBeenStarted = false;
 					}
-					if (isServiceRunning(ZeroMQService.class.getName())) {
+					if (isServiceRunning(ZeroMQServiceNative.class.getName())) {
 						StopReceivers stopReceivers = new StopReceivers(
 								activity, false);
 						stopReceivers.run();
@@ -702,6 +721,16 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 								filterTotalWatchersReceiver);
 					}
 
+					if (messagesSentReceiver == null) {
+						filterMessagesSentReceiver = new IntentFilter(
+								MessagesSentReceiver.MESSAGES_SENT_RECEIVER);
+						filterMessagesSentReceiver
+								.addCategory(Intent.CATEGORY_DEFAULT);
+						messagesSentReceiver = new MessagesSentReceiver(activity);
+						registerReceiver(messagesSentReceiver,
+								filterMessagesSentReceiver);
+					}
+
 					if (serviceStoppedReceiver == null) {
 						filterServiceStoppedReceiver = new IntentFilter(
 								ZeroMQServiceStoppedReceiver.SERVICE_STOPED);
@@ -713,7 +742,18 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 								filterServiceStoppedReceiver);
 					}
 
-					
+				 
+					if (serviceStartedReceiver == null) {
+						filterServiceStartedReceiver = new IntentFilter(
+								ZeroMQServiceStartedReceiver.SERVICE_STARTED);
+						filterServiceStartedReceiver
+								.addCategory(Intent.CATEGORY_DEFAULT);
+						serviceStartedReceiver = new ZeroMQServiceStartedReceiver(
+								activity);
+						registerReceiver(serviceStartedReceiver,
+								filterServiceStartedReceiver);
+					}
+
 					// networkChangeReceiver = new
 					// NetworkChangeReceiver(activity);
 
@@ -732,28 +772,35 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 					 * startWebSocketTask.execute((Void) null);
 					 */
 					// startTransmission.setText(STOP_SHARING);
-					
+
 					if (doBindService()) {
-						startTransmission.setEnabled(false);
-						startTransmission.setImageResource(R.drawable.share_red);	
+						startTransmission.setEnabled(true);
+						startTransmission
+								.setImageResource(R.drawable.share_red);
+						videoSharing = true;
 					} else {
-						StopReceivers stopReceivers = new StopReceivers(activity,
-								false);
+						StopReceivers stopReceivers = new StopReceivers(
+								activity, false);
 						stopReceivers.run();
 						videoSharing = false;
 						startSharingState = START_SHARING;
 						startTransmission.setEnabled(true);
-						startTransmission.setImageResource(R.drawable.share_blue);
-						UtilsWhatAmIdoing.displayGenericToast(activity,"Problems binding to service");
+						startTransmission
+								.setImageResource(R.drawable.share_blue);
+						UtilsWhatAmIdoing.displayGenericToast(activity,
+								"Problems binding to service");
 					}
 				} else {
 					StopReceivers stopReceivers = new StopReceivers(activity,
 							false);
-					stopReceivers.run();
+					//stopReceivers.run();
 					videoSharing = false;
 					startSharingState = START_SHARING;
 					startTransmission.setEnabled(true);
 					startTransmission.setImageResource(R.drawable.share_blue);
+					Native.loadlibs();
+					Native.stopZeromq();
+				
 				}
 
 			}
@@ -783,9 +830,9 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 		}
 		return degrees;
 	}
-	
+
 	public void setCameraDisplayOrientation() {
-		
+
 		android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
 		android.hardware.Camera.getCameraInfo(cameraId, info);
 		int rotation = activity.getWindowManager().getDefaultDisplay()
@@ -813,7 +860,7 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 		} else { // back-facing
 			result = (info.orientation - degrees + 360) % 360;
 		}
-		
+
 	}
 
 	@Override
@@ -863,18 +910,21 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 		gl.setLayoutParams(glLayoutParams);
 		holder.setLayoutParams(hLayoutParams);
 		momentsLayout.setLayoutParams(mLayoutParam);
-		
-		
-		GLSurfaceView surfaceView = (GLSurfaceView)momentsLayout.findViewById(R.id.opencvCameraView);
-		android.view.ViewGroup.LayoutParams sLayoutParams = surfaceView.getLayoutParams();
+
+		GLSurfaceView surfaceView = (GLSurfaceView) momentsLayout
+				.findViewById(R.id.opencvCameraView);
+		android.view.ViewGroup.LayoutParams sLayoutParams = surfaceView
+				.getLayoutParams();
 		sLayoutParams.height = mLayoutParam.height;
 		sLayoutParams.width = mLayoutParam.width;
 		surfaceView.setLayoutParams(sLayoutParams);
 		if (cameraRenderer != null) {
-			org.opencv.core.Size sz = new org.opencv.core.Size(mLayoutParam.width,mLayoutParam.height);
+			org.opencv.core.Size sz = new org.opencv.core.Size(
+					mLayoutParam.width, mLayoutParam.height);
 			cameraRenderer.setSize(sz);
 		}
 
+		Log.i(TAG,"--------------------- ONWINDOWS CHANGED height="+mLayoutParam.height+"--- width="+mLayoutParam.width);
 		LinearLayout optionsFrame = (LinearLayout) this
 				.findViewById(R.id.options_frame);
 		android.view.ViewGroup.LayoutParams optionsFrameLayout = optionsFrame
@@ -917,7 +967,19 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 		totalWatchers.setPadding(paddingLeftTotalWatchers,
 				paddingTopTotalWatchers, paddingRightTotalWatchers,
 				paddingBottomTotalWatchers);
+		
+		final TextView messagesSent = (TextView) activity
+				.findViewById(R.id.messagesSent);
+		int paddingLeftMessagesSent = messagesSent.getPaddingLeft();
+		int paddingRightMessagesSent = messagesSent.getPaddingRight();
+		int paddingBottomMessagesSent = messagesSent.getPaddingBottom();
+		int paddingTopMessagesSent = messagesSent.getPaddingTop();
+		paddingRightMessagesSent = (int) (width1 * 0.16);
+		messagesSent.setPadding(paddingLeftMessagesSent,
+				paddingTopMessagesSent, paddingRightMessagesSent,
+				paddingBottomMessagesSent);
 
+		
 		final ImageButton shareLocation = (ImageButton) activity
 				.findViewById(R.id.shareLocation);
 		int paddingLeftShareLocation = shareLocation.getPaddingLeft();
@@ -955,12 +1017,12 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 	@Override
 	public void onPause() {
 		super.onPause();
-		
+
 		if ((cameraView != null) && (cameraRenderer != null)) {
 			cameraView.onPause();
 		}
 
-		//cameraView.disableView();
+		// cameraView.disableView();
 		Log.i(TAG, "Paused called");
 	}
 
@@ -970,7 +1032,7 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 
 		OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_9, this,
 				mLoaderCallback);
-		
+
 		Log.i(TAG, "Resume called serviceRunning =["
 				+ isServiceRunning(ZeroMQService.class.getName())
 				+ "] and share=[" + videoSharing + "] camera=[" + videoStart
@@ -981,9 +1043,9 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 			restartTransmission();
 		}
 
-		if (videoStart) {
-			startCamera();
-		}
+		/*
+		 * if (videoStart) { startCamera(); }
+		 */
 
 	}
 
@@ -1031,14 +1093,15 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 		// applications replace our component.
 		boolean bound = getApplicationContext().bindService(
 				new Intent(getApplicationContext(),
-						com.watamidoing.transport.service.ZeroMQService.class),
+						com.watamidoing.transport.service.ZeroMQServiceNative.class),
 				zeroMQServiceConnection, 0);
-		
+
 		if (bound) {
 			mIsBound = true;
 			Log.d("WhatAmidoingCamera.doBindService", "binding to service");
 		} else {
-			Log.d("WhatAmidoingCamera.doBindService", "Uable binding to service");	
+			Log.d("WhatAmidoingCamera.doBindService",
+					"Uable binding to service");
 		}
 		return bound;
 
@@ -1065,19 +1128,21 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 				.findViewById(R.id.start_transmission);
 		if (mService != null) {
 
+			/*
 			if (whosAcceptedMenuItem != null) {
 				whosAcceptedMenuItem.setEnabled(true);
 				sendLocationMenuItem.setEnabled(true);
 			}
+			*/
 			if (cameraView != null) {
 				// TODO:
 				// cameraView.sharingHasStarted();
 			}
-			videoSharing = true;
-			this.mService = mService;
-			startSharingState = STOP_SHARING;
-			startTransmission.setImageResource(R.drawable.share_red);
-			opencvCameraListener.createMessengerService(mService, this);
+			//videoSharing = true;
+			//this.mService = mService;
+			//startSharingState = STOP_SHARING;
+			//startTransmission.setImageResource(R.drawable.share_red);
+			//opencvCameraListener.createMessengerService(mService, this);
 		} else {
 			StopReceivers stopReceivers = new StopReceivers(activity, false);
 			stopReceivers.run();
@@ -1119,20 +1184,17 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 		public void run() {
 
 			Intent msgIntent = new Intent(activity,
-					com.watamidoing.transport.service.ZeroMQService.class);
+					com.watamidoing.transport.service.ZeroMQServiceNative.class);
 			activity.stopService(msgIntent);
+			
 
 			Intent totalWatchersIntent = new Intent(activity,
 					com.watamidoing.total.service.TotalWatchersService.class);
 			activity.stopService(totalWatchersIntent);
 
 			unregisterAllReceivers();
-			opencvCameraListener.disableMessengerService();
-			if (cameraView != null) {
-				// TODO
-				// cameraView.sharingHasStopepd();
-			}
-
+			//opencvCameraListener.disableMessengerService();
+			
 			doUnbindService();
 
 			if (callOnBackPress) {
@@ -1153,14 +1215,13 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 				activity.callOriginalOnBackPressed();
 			}
 
-			
 			startSharingState = START_SHARING;
 			final ImageButton transmissionButton = (ImageButton) activity
 					.findViewById(R.id.start_transmission);
 			transmissionButton.setImageResource(R.drawable.share_blue);
 			transmissionButton.setEnabled(true);
 			videoSharing = false;
-			
+
 			if (sendLocationMenuItem != null) {
 				sendLocationMenuItem.setEnabled(false);
 				whosAcceptedMenuItem.setEnabled(false);
@@ -1170,6 +1231,9 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 					.findViewById(R.id.totalWatchers);
 			totalWatchers.setText("");
 
+			final TextView messagesSent = (TextView) activity
+					.findViewById(R.id.messagesSent);
+			messagesSent.setText("");
 		}
 	}
 
@@ -1187,12 +1251,30 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 		totalWatchersReceiver = null;
 
 		try {
+			
+			if (messagesSentReceiver != null) {
+				unregisterReceiver(messagesSentReceiver);
+			}
+			
+		} catch (IllegalArgumentException e) {
+			
+		}
+		messagesSentReceiver = null;
+		try {
 			if (serviceStoppedReceiver != null) {
 				unregisterReceiver(serviceStoppedReceiver);
 			}
 		} catch (IllegalArgumentException e) {
 		}
-		serviceStoppedReceiver = null;
+		
+		try {
+			if (serviceStartedReceiver != null) {
+				unregisterReceiver(serviceStartedReceiver);
+			}
+		} catch (IllegalArgumentException e) {
+		}
+		serviceStartedReceiver = null;
+
 		try {
 			if (networkChangeReceiver != null) {
 				unregisterReceiver(networkChangeReceiver);
@@ -1221,64 +1303,49 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 
 	}
 
-	private void startCamera() {
+	public void startCamera() {
 
-		if (cameraView != null) {
-			/*
-			 * Changing the size of the screen
-			 */
-			
-			ScreenDimension dimension = UtilsWhatAmIdoing
-					.getScreenDimensions(activity);
-			// get layout parameters for that element
-			if (mainLayout == null) {
-				mainLayout = (LinearLayout) this
-						.findViewById(R.id.momemts_frame);
+		runOnUiThread(new Thread(new Runnable() {
+			public void run() {
+				if (cameraView != null) {
+					ScreenDimension dimension = UtilsWhatAmIdoing
+							.getScreenDimensions(activity);
+					if (mainLayout == null) {
+						mainLayout = (LinearLayout) activity
+								.findViewById(R.id.momemts_frame);
+					}
+
+					ViewGroup.LayoutParams params = mainLayout
+							.getLayoutParams();
+
+					imageHeight = params.height;
+					imageWidth = params.width;
+
+					// cameraView.onResume();
+					int rotation = activity.getWindowManager()
+							.getDefaultDisplay().getRotation();
+					cameraRenderer.setOrientation(rotation, cameraId,
+							imageWidth, imageHeight);
+					CameraPreviewerData cameraPreviewData = new CameraPreviewerData();
+					org.opencv.core.Size sz = cameraPreviewData
+							.calculateCameraFrameSize(imageWidth, imageHeight);
+					cameraRenderer.setSize(sz);
+					boolean result = cameraRenderer.startCamera();
+
+					if (result) {
+						videoStart = true;
+						final ImageButton startVideo = (ImageButton) activity
+								.findViewById(R.id.start_video);
+						startVideo.setImageResource(R.drawable.stop_camera);
+					} else {
+						UtilsWhatAmIdoing.displayGenericToast(activity,
+								"Problems starting camera");
+					}
+
+				}
+
 			}
-			
-			
-			ViewGroup.LayoutParams params = mainLayout.getLayoutParams();
-
-			imageHeight = params.height;
-			imageWidth = params.width;
-
-			// cameraView = new CameraView(activity);
-			// mainLayout.addView(cameraView, layoutParam);
-			// mainLayout.addView(cameraView);
-			cameraView.onResume();
-			int rotation = activity.getWindowManager().getDefaultDisplay()
-					.getRotation();
-			
-			cameraRenderer.setOrientation(rotation,cameraId,imageWidth,imageHeight);
-			
-			
-			
-			CameraPreviewerData cameraPreviewData = new CameraPreviewerData();
-			org.opencv.core.Size sz = cameraPreviewData.calculateCameraFrameSize(imageWidth, imageHeight);
-			cameraRenderer.setSize(sz);
-			
-			
-			boolean result = cameraRenderer.startCamera();
-			
-			
-			//cameraView.setOrientation(rotation,cameraId);
-			//cameraView.enableView();
-			//cameraView.enableFpsMeter();
-			if (result) {
-			videoStart = true;
-			final ImageButton startVideo = (ImageButton) activity
-					.findViewById(R.id.start_video);
-			startVideo.setImageResource(R.drawable.stop_camera);
-			} else {
-				UtilsWhatAmIdoing.displayGenericToast(activity, "Problems starting camera");
-			}
-
-		}
-
-		if (videoSharing) {
-			// TODO
-			// cameraView.sharingHasStarted();
-		}
+		}));
 	}
 
 	public void resetPassword() {
@@ -1771,7 +1838,7 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 
 	@Override
 	public void zeroMQServiceDestroyed(boolean serviceDestroyed) {
-		
+
 		runOnUiThread(new Thread(new Runnable() {
 
 			@Override
@@ -1783,13 +1850,51 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 				startTransmission.setEnabled(true);
 				startTransmission.setImageResource(R.drawable.share_blue);
 			}
-			
+
+		}));
+
+	}
+
+	public int getCameraId() {
+		return cameraId;
+	}
+
+	@Override
+	public void zeroMQServiceStarted(boolean serviceStarted) {
+		runOnUiThread(new Thread(new Runnable() {
+			@Override
+			public void run() {
+				
+				Log.d(TAG,"---- RECIEVED BROADCAST STARTED MESSAGE");
+				
+				if (whosAcceptedMenuItem != null) {
+					whosAcceptedMenuItem.setEnabled(true);
+					sendLocationMenuItem.setEnabled(true);
+				}
+				
+				videoSharing = true;
+				startSharingState = START_SHARING;
+				ImageButton startTransmission = (ImageButton) activity
+						.findViewById(R.id.start_transmission);
+				startTransmission.setEnabled(true);
+				startTransmission.setImageResource(R.drawable.share_red);
+				UtilsWhatAmIdoing.displayGenericToast(activity, "zeromq connected");
+			}
+
 		}));
 		
 		
 	}
 
-	public int getCameraId() {
-		return cameraId;
+	@Override
+	public void updateMessagesSent(final String messagesSent) {
+		runOnUiThread(new Thread(new Runnable() {
+			public void run() {
+				final TextView tw = (TextView) activity
+						.findViewById(R.id.messagesSent);
+				tw.setText(messagesSent);
+			}
+		}));
+		
 	}
 }

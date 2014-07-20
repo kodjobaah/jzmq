@@ -1,13 +1,9 @@
 #include <android/log.h>
 //#include <boost/lockfree/queue.hpp>
-#include <boost/thread/exceptions.hpp>
-#include <boost/thread/thread.hpp>
-#include <boost/lockfree/spsc_queue.hpp>
-#include <boost/interprocess/creation_tags.hpp>
-#include <boost/interprocess/ipc/message_queue.hpp>
-#include <boost/atomic/atomic.hpp>
+
 #include <EGL/egl.h>
 
+#define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -19,13 +15,6 @@
 #include <math.h>
 //#include <Math.h>
 //#include <opencv/cv.h>
-#include <opencv2/core/core.hpp>
-#include <opencv2/core/types_c.h>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/highgui/highgui_c.h>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/imgproc/types_c.h>
-#include <pthread.h>
 #include <sched.h>
 #include <string.h>
 #include <zmq.hpp>
@@ -33,9 +22,10 @@
 #include <vector>
 #include <queue>
 #include <b64/encode.hpp>
+#include <msgpack.h>
 
 #include "FpsMeter.h"
-#include "ringbuffer.hpp"
+#include "global.h"
 
 //#include <time.h>
 
@@ -46,10 +36,12 @@
 #define LOG(...)  __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
 
+//Used for zeromq
+#define REQUEST_TIMEOUT     2500
+#define REQUEST_RETRIES     3
+
 #define VERTEX_POS_SIZE 3 // x, y and z
 #define VERTEX_TEXCOORD0_SIZE 2 // s and t
-
-PFNGLEGLIMAGETARGETTEXTURE2DOESPROC glEGLImageTargetTexture2DOES;
 
 GLuint texture;
 cv::VideoCapture capture;
@@ -57,13 +49,11 @@ cv::Mat buffer[3000];
 cv::Mat rgbFrame;
 cv::Mat inframe;
 cv::Mat outframe;
-
 //std::queue<cv::Mat> dataToSend;
 //std::queue<cv::Mat> sendToDisplayFrame;
 //typedef boost::heap::priority_queue<cv::Mat *> MyPriQue;
 //MyPriQue dataToSend;
 
-ringbuffer<cv::Mat, 200> dataToSend;
 ringbuffer<cv::Mat, 200> sendToDisplayFrame;
 FpsMeter fpsMeter;
 
@@ -80,11 +70,9 @@ pthread_mutex_t FGmutex;
 pthread_t frameGrabber;
 pthread_attr_t attr;
 
-boost::thread_group tgroup;
-
 pthread_t dataSenderThread;
 pthread_attr_t dataSenderThreadAttr;
-pthread_mutex_t dataToSendMux;
+
 pthread_cond_t dataToSendCond;
 
 struct sched_param dataSenderParam;
@@ -97,50 +85,28 @@ typedef struct {
 	GLuint renderBuffer;
 	GLuint frameBuffer;
 	GLuint texture;
-	GLint texWidth;
-	GLint texHeight;
-
-	GLfloat* vVertices;		// xyst, xyst, ...
-	GLuint* indices;
-	GLuint vboVertices;
-	GLuint vboIndices;
 
 	// Texture handle
 	GLuint textureId;
-
-	// Sampler location
-	GLint samplerLoc;
 
 	// Offset location
 	GLint offsetLoc;
 
 	GLuint programObject;
-	GLuint verticesLoc;	// location for a_vertices attribute in vertex shader
+
 	// Attribute locations
 	GLint positionLoc;
 	GLint texCoordLoc;
 
 	GLuint vboIds[2];
-	GLuint projectionLoc;
-	GLuint modelLoc;
-	GLuint viewLoc;
-	GLfloat projectionMatrix[16];
-	GLfloat viewMatrix[16];
-	GLfloat projectionViewMatrix[16];
 
-	glm::mat4 Model, View, Projection;
-	GLuint modelViewLoc;
-	GLuint baseMapLoc;	// location for s_baseMap sampler2D in fragment shader
+	GLuint baseMapLoc;
 } UserData;
 
 UserData userData;
 
 /************* Examples **************************/
-// gl_Position =  u_projection * u_view * u_model * a_position;
-GLchar VERTEX_SHADER[] = "uniform mat4 u_projection; \n"
-		"uniform mat4 u_model; \n"
-		"uniform mat4 u_view; \n"
-		"attribute vec4 a_position;   \n"
+GLchar VERTEX_SHADER[] = "attribute vec4 a_position;   \n"
 		"attribute vec2 a_texCoord;   \n"
 		"varying vec2 v_texCoord;     \n"
 		"void main()                  \n"
@@ -163,38 +129,11 @@ GLuint nVertices = 4;
 
 GLushort indices[] = { 0, 1, 2, 0, 2, 3 };
 
-
 GLfloat vVertices[] = {
-                // X, Y, Z, U, V
-                -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-                 1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-                -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
-                 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
-};
+		// X, Y, Z, U, V
+		-1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 1.0f, 0.0f, -1.0f,
+		1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, };
 
-/*
-GLfloat vVertices[] = {
-     -1.0f, -1.0f,0.0f,
-     1.0f, 1.0f,
-     1.0f, -1.0f,0.0f,
-     1.0f, 0.0f,
-     -1.0f,  1.0f,0.0f,
-     0.0f,  1.0f,
-     1.0f,  1.0f,0.0f,
-     0.0f,  0.0f,
- };
- */
-/*
-GLfloat vVertices[] = { -0.5f, 0.5f, 0.0f,  // Position 0
-		0.0f, 0.0f,        // TexCoord 0
-		-0.5f, -0.5f, 0.0f, // Position 1
-		0.0f, 1.0f,        // TexCoord 1
-		0.5f, -0.5f, 0.0f, // Position 2
-		1.0f, 1.0f,        // TexCoord 2
-		0.5f, 0.5f, 0.0f,  // Position 3
-		1.0f, 0.0f         // TexCoord 3
-		};
-*/
 EGLContext mEglContext;
 EGLDisplay mEglDisplay = EGL_NO_DISPLAY;
 
@@ -204,9 +143,9 @@ extern "C" {
 void drawBackground(bool sendData);
 void destroyTexture();
 void frameRetriever();
-void sendData();
+void sendData(const char *urlPath, const char *authToken);
 JNIEnv *getJniEnv();
-jclass getCallbackInterface(JNIEnv *env);
+jobject getCallbackInterface(JNIEnv *env);
 void ableToConnectZmq();
 void unableToConnectZmq();
 GLuint LoadTexture(cv::Mat data);
@@ -217,6 +156,7 @@ void drawImage(cv::Mat data);
 void translateM(float m[], int mOffset, float x, float y, float z);
 void printMatrix(float m[]);
 void checkBufferStatus();
+void sendCVMat(void);
 /*******************************EXAMPLES BEGIN ****************************/
 bool checkGlError(const char* funcName) {
 	GLint err = glGetError();
@@ -225,6 +165,11 @@ bool checkGlError(const char* funcName) {
 		return true;
 	}
 	return false;
+}
+
+static void printGlString(const char* name, GLenum s) {
+	const char* v = (const char*) glGetString(s);
+	LOG("GL %s: %s\n", name, v);
 }
 
 ///
@@ -304,16 +249,22 @@ GLuint createProgram(const char* vtxSrc, const char* fragSrc) {
 
 	exit: glDeleteShader(vtxShader);
 	glDeleteShader(fragShader);
-	glClearColor(0.0f, 0.3f, 0.0f, 0.0f);
-	//Provides a hint to compiler to release resources used for
-	//compiling shaders
 	glReleaseShaderCompiler();
 	return program;
 }
 
-static void printGlString(const char* name, GLenum s) {
-	const char* v = (const char*) glGetString(s);
-	LOG("GL %s: %s\n", name, v);
+void setupVBO() {
+
+	GLuint v = sizeof(GLfloat);
+	GLuint s = sizeof(GLushort);
+	// Only allocate on the first draw
+	glGenBuffers(2, userData.vboIds);
+	glBindBuffer( GL_ARRAY_BUFFER, userData.vboIds[0]);
+	glBufferData( GL_ARRAY_BUFFER, nVertices * vtxStride, vVertices,
+	GL_STATIC_DRAW);
+	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, userData.vboIds[1]);
+	glBufferData( GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
+	GL_STATIC_DRAW);
 }
 
 GLuint createTexture() {
@@ -321,12 +272,17 @@ GLuint createTexture() {
 	glGenTextures(1, &texId);
 	glBindTexture(GL_TEXTURE_2D, texId);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, frameWidth, frameHeight, 0, GL_RGB,
-			GL_UNSIGNED_BYTE, NULL);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+	GL_NEAREST_MIPMAP_NEAREST);
+	/*
+	 glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	 glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	 */
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
+	glGenerateMipmap(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	return texId;
 }
@@ -337,7 +293,6 @@ void loadSubTexture(cv::Mat data) {
 }
 
 void renderToTexture(cv::Mat rgbFrame) {
-
 	GLuint offset = 0.0;
 	glBindFramebuffer(GL_FRAMEBUFFER, userData.frameBuffer);
 	glUseProgram(userData.programObject);
@@ -364,27 +319,15 @@ void renderToTexture(cv::Mat rgbFrame) {
 	glVertexAttribPointer(userData.texCoordLoc,
 	VERTEX_TEXCOORD0_SIZE,
 	GL_FLOAT, GL_FALSE, vtxStride, (const void *) offset);
-
-	// Set the base map sampler to texture unit to 0
-	/*
 	glUniform1i(userData.baseMapLoc, 0);
 
-	glUniformMatrix4fv(userData.modelLoc, 1, GL_FALSE,
-			glm::value_ptr(userData.View));
-	glUniformMatrix4fv(userData.viewLoc, 1, GL_FALSE,
-			glm::value_ptr(userData.View));
-	glUniformMatrix4fv(userData.projectionLoc, 1, GL_FALSE,
-			glm::value_ptr(userData.Projection));
-
-	 */
-	//glDrawElements(GL_TRIANGLE_STRIP, 6, GL_UNSIGNED_SHORT, 0);
-	glDrawArrays(GL_TRIANGLE_STRIP,0,4);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 }
 GLuint createRenderBuffer() {
 
-		// create a framebuffer object, you need to delete them when program exits.
+	// create a framebuffer object, you need to delete them when program exits.
 	glGenFramebuffers(1, &userData.frameBuffer);
 	glBindFramebuffer(GL_FRAMEBUFFER, userData.frameBuffer);
 
@@ -392,18 +335,22 @@ GLuint createRenderBuffer() {
 	glBindRenderbuffer(GL_RENDERBUFFER, userData.renderBuffer);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, frameWidth,
 			frameHeight);
+
 	// attach a renderbuffer to depth attachment point
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-			GL_RENDERBUFFER, userData.renderBuffer);
+	GL_RENDERBUFFER, userData.renderBuffer);
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
-	//userData.textureId = createTexture();
+	userData.textureId = createTexture();
+
+	//glActiveTexture(GL_TEXTURE0);
+	//glBindTexture(GL_TEXTURE_2D, userData.textureId);
 	// attach a texture to FBO color attachement point
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
 			userData.textureId, 0);
 
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-			GL_RENDERBUFFER, userData.renderBuffer);
+	GL_RENDERBUFFER, userData.renderBuffer);
 
 	checkBufferStatus();
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -438,20 +385,6 @@ void checkBufferStatus() {
 		}
 	}
 
-}
-
-void setupVBO() {
-
-	GLuint v = sizeof(GLfloat);
-	GLuint s = sizeof(GLushort);
-	// Only allocate on the first draw
-	glGenBuffers(2, userData.vboIds);
-	glBindBuffer( GL_ARRAY_BUFFER, userData.vboIds[0]);
-	glBufferData( GL_ARRAY_BUFFER, nVertices * vtxStride, vVertices,
-			GL_STATIC_DRAW);
-	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, userData.vboIds[1]);
-	glBufferData( GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
-			GL_STATIC_DRAW);
 }
 
 JNIEXPORT void JNICALL
@@ -489,24 +422,17 @@ Java_com_watamidoing_nativecamera_Native_init(JNIEnv* env, jobject obj,
 	userData.baseMapLoc = glGetUniformLocation(userData.programObject,
 			"s_baseMap");
 
-	/*
-	userData.projectionLoc = glGetUniformLocation(userData.programObject,
-			"u_projection");
-	userData.modelLoc = glGetUniformLocation(userData.programObject, "u_model");
-	userData.viewLoc = glGetUniformLocation(userData.programObject, "u_view");
-	LOG("projectionLoc=%d, modelLoc=%d viewLoc=%d a_postion=%d, a_textCord=%d",
-			userData.projectionLoc, userData.modelLoc, userData.viewLoc,
-			userData.positionLoc, userData.texCoordLoc);
-	*/
 	if (userData.baseMapLoc == 0) {
 		LOG(
 				"--------------- UNABLE TO LOAD THE BASEMAPLOC------------------------");
 	}
 
-
 	setupVBO();
-	userData.textureId = createTexture();
+	//userData.textureId = createTexture();
 	createRenderBuffer();
+
+	boost::thread sendCVMatThread(sendCVMat);
+	tgroup.add_thread(&sendCVMatThread);
 }
 
 JNIEXPORT void JNICALL Java_com_watamidoing_nativecamera_Native_initCamera(
@@ -515,33 +441,28 @@ JNIEXPORT void JNICALL Java_com_watamidoing_nativecamera_Native_initCamera(
 
 	orientation = rot;
 	cameraId = camId;
-	//capture.open(CV_CAP_ANDROID + 0);
 	LOG("cameraPictureWidth = %d", width);
 	LOG("cameraPictureHeight = %d", height);
-	capture.open(cameraId);
+	capture.open(CV_CAP_ANDROID + cameraId);
 	capture.set(CV_CAP_PROP_FRAME_WIDTH, width);
 	capture.set(CV_CAP_PROP_FRAME_HEIGHT, height);
 	screenWidth = width;
 	screenHeight = height;
 
-	// Projection matrix : 45° Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
-	//glm::mat4 Projection = glm::perspective(45.0f, float(frameWidth / frameHeight), 0.1f, 50.0f);
-	glm::mat4 Projection = glm::ortho<GLfloat>( 0.0, frameWidth, frameHeight, 0.0, 1.0, -1.0 );
-	glm::mat4 View = glm::mat4();
-	/*
-	glm::mat4 View       = glm::lookAt(
-								glm::vec3(0,-3,1), // Camera is at (4,3,-3), in World Space
-								glm::vec3(0,0,0), // and looks at the origin
-								glm::vec3(1,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
-						   );*/
-	// Model matrix : an identity matrix (model will be at the origin)
-	glm::mat4 Model      = glm::mat4();
-	// Our ModelViewProjection : multiplication of our 3 matrices
-	//userData.Projection = Projection * View * Model; // Remember, matrix multiplication is the other way around
-	userData.Projection = glm::ortho(0.1f, float(frameWidth), float(frameHeight), 0.1f);
-	//userData.Projection=glm::perspective(100.0f, (float)screenWidth/screenHeight, 1.0f, 100.0f);
-	//boost::thread frameRetrieverThread(frameRetriever);
-	//tgroup.add_thread(&frameRetrieverThread);
+}
+
+JNIEXPORT void JNICALL Java_com_watamidoing_nativecamera_Native_releaseCamera(
+		JNIEnv*, jobject) {
+	LOG("Camera Released");
+	capture.release();
+	//tgroup.interrupt_all();
+}
+JNIEXPORT void JNICALL Java_com_watamidoing_nativecamera_Native_ReleaseProgram(
+		JNIEnv*, jobject) {
+
+	glDeleteFramebuffers(1, &userData.frameBuffer);
+	glDeleteTextures(1, &userData.textureId);
+	glDeleteProgram(userData.programObject);
 
 }
 
@@ -552,43 +473,24 @@ JNIEXPORT void JNICALL Java_com_watamidoing_nativecamera_Native_surfaceChangedNa
 	frameHeight = height;
 	frameWidth = width;
 
-
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 
-
-//	userData.Projection = glm::perspective(20.1f, aspect, 0.1f, 1.0f);
-//	userData.Projection = glm::perspective(45.0f, aspect, 1.0f, 100.0f);
-//	userData.Projection = glm::ortho(0, frameWidth, 0, frameHeight);
 	glViewport(0, 0, width, height);
-
-	//userData.Projection = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
-	//userData.Model = glm::translate(userData.Model, glm::vec3(0.1f, 0.2f, 0.5f));
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 }
 
-void printMatrix(float m[]) {
-
-	int i;
-	LOG("---matix begin--");
-	for (i = 0; i < 16; i++) {
-		LOG("%.2f", m[i]);
-	}
-	LOG("--matrix-end");
-}
-///
-// Draw a triangle using the shader pair created in Init()
-//
 JNIEXPORT void JNICALL
 Java_com_watamidoing_nativecamera_Native_draw(JNIEnv* env, jobject obj) {
 
 	GLuint textureId;
 	cv::Mat fr;
 	GLuint offset = 0;
-	LOG("READING FRAME frameWidth=%d frameHeight=%d", frameWidth, frameHeight);
+//	LOG("READING FRAME frameWidth=%d frameHeight=%d", frameWidth, frameHeight);
 //	if (sendToDisplayFrame.pop(fr)) {
 	if (capture.isOpened() && capture.read(inframe)) {
-		LOG("READ FRAME");
+		//	LOG("READ FRAME");
 		inframe.copyTo(fr);
 		cv::cvtColor(fr, outframe, CV_BGR2RGB);
 		cv::flip(outframe, rgbFrame, 1);
@@ -596,6 +498,8 @@ Java_com_watamidoing_nativecamera_Native_draw(JNIEnv* env, jobject obj) {
 		renderToTexture(rgbFrame);
 
 		//setProjection(frameWidth,frameHeight);
+		glViewport(0, 0, frameWidth, frameHeight);
+		glClearColor(1.0f, 0.0f, 0.0f, 0.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// Use the program object
@@ -604,12 +508,7 @@ Java_com_watamidoing_nativecamera_Native_draw(JNIEnv* env, jobject obj) {
 		//glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, userData.textureId);
 
-		/// glBindFramebuffer(GL_FRAMEBUFFER, userData.frameBuffer);
-		//glViewport(0, 0, frameWidth, frameHeight);
-		//glClearColor(1.0f, 0.0f, 0.0f, 0.0f);
-		//userData.textureId = LoadTexture(rgbFrame);
-
-		//loadSubTexture(rgbFrame);
+		loadSubTexture(rgbFrame);
 		glBindBuffer(GL_ARRAY_BUFFER, userData.vboIds[0]);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, userData.vboIds[1]);
 
@@ -627,19 +526,14 @@ Java_com_watamidoing_nativecamera_Native_draw(JNIEnv* env, jobject obj) {
 		// Set the base map sampler to texture unit to 0
 		glUniform1i(userData.baseMapLoc, 0);
 
-		glUniformMatrix4fv(userData.modelLoc, 1, GL_FALSE,
-				glm::value_ptr(userData.View));
-		glUniformMatrix4fv(userData.viewLoc, 1, GL_FALSE,
-				glm::value_ptr(userData.View));
-		glUniformMatrix4fv(userData.projectionLoc, 1, GL_FALSE,
-				glm::value_ptr(userData.Projection));
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-		//glFrontFace(GL_CW);
-		//glDrawElements(GL_TRIANGLE_STRIP, 6, GL_UNSIGNED_SHORT, 0);
-		glDrawArrays(GL_TRIANGLE_STRIP,0,4);
+		glDisableVertexAttribArray(userData.positionLoc);
+		glDisableVertexAttribArray(userData.texCoordLoc);
 
+		dataToSend.push(rgbFrame);
 	} else {
-		LOG("UNABLE TO READ FRAME");
+		//	LOG("UNABLE TO READ FRAME");
 	}
 }
 
@@ -668,12 +562,15 @@ JNIEnv *getJniEnv() {
 	}
 }
 
-jclass getCallbackInterface(JNIEnv *env) {
+jobject getCallbackInterface(JNIEnv *env) {
 
 	bool send = true;
 	/* Construct a Java string */
-	jclass interfaceClass = env->GetObjectClass(gNativeObject);
+	LOG("-Z3");
+	jobject interfaceClass = env->NewWeakGlobalRef(gNativeObject);
+	LOG("-Z4");
 	if (!interfaceClass) {
+		LOG("-Z5");
 		LOG("callback_handler: failed to get class reference");
 		gJavaVM->DetachCurrentThread();
 		send = false;
@@ -690,141 +587,532 @@ jclass getCallbackInterface(JNIEnv *env) {
 void connectedZmq() {
 
 	JNIEnv *env = getJniEnv();
-	jclass interfaceClass;
+	LOG("-ZC1");
+	jobject obj;
 	if (env) {
-		interfaceClass = getCallbackInterface(env);
+		LOG("-ZC2");
+		obj = getCallbackInterface(env);
 	}
 
 	bool send = true;
-	if (interfaceClass) {
+	if (obj) {
+		LOG("-ZC3");
 		/* Find the callBack method ID */
+		jclass interfaceClass = env->GetObjectClass(obj);
+		LOG("-ZC4");
 		jmethodID method = env->GetMethodID(interfaceClass, "ableToConnect",
 				"()V");
+		LOG("-ZC5");
 		if (!method) {
-			LOG("callback_handler: failed to get method ID");
+			LOG("callback_handler: failed to get method ID (ableToConnect)");
 			gJavaVM->DetachCurrentThread();
 			send = false;
 		}
 
 		if (send) {
-			env->CallStaticVoidMethod(interfaceClass, method);
+			LOG("-ZC6");
+			env->CallVoidMethod(obj, method);
+			LOG("-ZC7");
 		}
 
 		gJavaVM->DetachCurrentThread();
 
 	}
-	LOG("------------ SENDER STOPPED-----------------");
+	LOG("------------ SENDT ABLET TO CONNECT MESSAGE-----------------");
 }
 
 void unableToConnectZmq() {
 
 	JNIEnv *env = getJniEnv();
-	jclass interfaceClass;
+	LOG("-ZNC1");
+	jobject obj;
 	if (env) {
-		interfaceClass = getCallbackInterface(env);
+		LOG("-ZNC2");
+		obj = getCallbackInterface(env);
 	}
 
 	bool send = true;
-	if (interfaceClass) {
+	if (obj) {
 		/* Find the callBack method ID */
+		jclass interfaceClass = env->GetObjectClass(obj);
 		jmethodID method = env->GetMethodID(interfaceClass, "unableToConnect",
 				"()V");
 		if (!method) {
-			LOG("callback_handler: failed to get method ID");
+			LOG("callback_handler: failed to get method ID (unableToConnect)");
 			gJavaVM->DetachCurrentThread();
 			send = false;
 		}
 
 		if (send) {
-			env->CallStaticVoidMethod(interfaceClass, method);
+			env->CallVoidMethod(obj, method);
 		}
 
 		gJavaVM->DetachCurrentThread();
 
 	}
-	LOG("------------ SENDER STOPPED-----------------");
+	LOG("------------ SENT UNABLE TO CONNECT MESSAGE----------------");
 }
 
-void sendData() {
+void zmqConnectionDropped() {
+
+	JNIEnv *env = getJniEnv();
+	LOG("-ZNC1");
+	jobject obj;
+	if (env) {
+		LOG("-ZNC2");
+		obj = getCallbackInterface(env);
+	}
+
+	bool send = true;
+	if (obj) {
+		/* Find the callBack method ID */
+		jclass interfaceClass = env->GetObjectClass(obj);
+		jmethodID method = env->GetMethodID(interfaceClass, "connectionDropped",
+				"()V");
+		if (!method) {
+			LOG("callback_handler: failed to get method ID (connectionDropped)");
+			gJavaVM->DetachCurrentThread();
+			send = false;
+		}
+
+		if (send) {
+			env->CallVoidMethod(obj, method);
+		}
+
+		gJavaVM->DetachCurrentThread();
+
+	}
+	LOG("------------ CONNECTION DROPPED----------------");
+}
+
+void updateMessageSent(long messageSent) {
+
+	JNIEnv *env = getJniEnv();
+	LOG("-UMSC1");
+	jobject obj;
+	if (env) {
+		LOG("-UMSC2");
+		obj = getCallbackInterface(env);
+	}
+
+	bool send = true;
+	if (obj) {
+		/* Find the callBack method ID */
+		jclass interfaceClass = env->GetObjectClass(obj);
+		jmethodID method = env->GetMethodID(interfaceClass, "updateMessagesSent",
+				"(I)V");
+		if (!method) {
+			LOG("callback_handler: failed to get method ID (updateMessagesSent)");
+			gJavaVM->DetachCurrentThread();
+			send = false;
+		}
+
+		if (send) {
+			env->CallVoidMethod(obj, method);
+		}
+
+		gJavaVM->DetachCurrentThread();
+
+	}
+	LOG("------------ Messages Sent----------------");
+}
+
+void sendCVMat(void) {
+	LOG(
+			"---------------------------------------------- SEND CVMAT -----------------------");
+	bool done = false;
+	LOG("-1");
+	zmq::context_t context(1);
+	LOG("-2");
+	zmq::socket_t socket(context, ZMQ_PUSH);
+	LOG("-3");
+	socket.bind("tcp://127.0.0.1:5555");
+	LOG("=== WAITING FOR MAT=====");
+	while (!done) {
+
+		cv::Mat in;
+		CvMat *out;
+		cv::Mat cl;
+		if (dataToSend.pop(in)) {
+			int cols = in.cols;
+			int rows = in.rows;
+			int type = in.type();
+			int elem_size = in.elemSize();
+			int step = in.step;
+			const size_t data_size = cols * rows * elem_size;
+
+			char colsBuf[65];
+			int len = sprintf(colsBuf, "%d", cols);
+			zmq::message_t messCols(len);
+			memcpy((void *) messCols.data(), colsBuf, len);
+			socket.send(messCols, ZMQ_SNDMORE);
+
+			char rowBuf[65];
+			len = sprintf(rowBuf, "%d", rows);
+			zmq::message_t messRows(len);
+			memcpy((void *) messRows.data(), rowBuf, len);
+			socket.send(messRows, ZMQ_SNDMORE);
+
+			char typeBuf[65];
+			len = sprintf(typeBuf, "%d", type);
+			zmq::message_t messType(len);
+			memcpy((void *) messType.data(), typeBuf, len);
+			socket.send(messType, ZMQ_SNDMORE);
+
+			char elemBuf[65];
+			len = sprintf(elemBuf, "%d", elem_size);
+			zmq::message_t messSize(len);
+			memcpy((void *) messSize.data(), elemBuf, len);
+			socket.send(messSize, ZMQ_SNDMORE);
+
+			char stepBuf[65];
+			len = sprintf(stepBuf, "%d", step);
+			zmq::message_t stepSize(len);
+			memcpy((void *) stepSize.data(), stepBuf, len);
+			socket.send(stepBuf, ZMQ_SNDMORE);
+
+			/* -- PACK -- */
+			/*
+			 char *buf = NULL;
+			 msgpack_sbuffer sbuf;
+			 msgpack_sbuffer_init(&sbuf);
+			 msgpack_packer pck;
+			 msgpack_packer_init(&pck, &sbuf, msgpack_sbuffer_write);
+			 msgpack_pack_raw(&pck, data_size);
+			 msgpack_pack_raw_body(&pck, in.ptr(), data_size);
+			 socket.send(sbuf.data, sbuf.size, 0);
+			 LOG("SENT MESSAGE: DATA_SIZE=%d, BUF_SIZE=%d",data_size,sbuf.size);
+			 msgpack_sbuffer_destroy(&sbuf);
+			 */
+			socket.send(in.ptr(), data_size);
+			LOG("SENT MESSAGE: DATA_SIZE=%d ", data_size);
+
+		}
+	}
+}
+void zeroMQDataReceiver() {
+
+	zmq::context_t context(1);
+	zmq::socket_t socket(context, ZMQ_PULL);
+	socket.connect("tcp://127.0.0.1:5555");
+	bool done = false;
+	LOG("WAITING TO RECEIVE MAT");
+	int count = 0;
+	while (!done) {
+		int64_t more = 0;
+		size_t more_size = sizeof(more);
+
+		zmq::message_t reply;
+		socket.recv(&reply);
+
+		std::string cols(static_cast<char*>(reply.data()), reply.size());
+		socket.getsockopt(ZMQ_RCVMORE, &more, &more_size);
+		int col = atoi(cols.c_str());
+
+		socket.recv(&reply);
+		std::string rows(static_cast<char*>(reply.data()), reply.size());
+		socket.getsockopt(ZMQ_RCVMORE, &more, &more_size);
+		int row = atoi(rows.c_str());
+
+		socket.recv(&reply);
+		std::string types(static_cast<char*>(reply.data()), reply.size());
+		socket.getsockopt(ZMQ_RCVMORE, &more, &more_size);
+		int type = atoi(types.c_str());
+
+		socket.recv(&reply);
+		std::string elemSizes(static_cast<char*>(reply.data()), reply.size());
+		socket.getsockopt(ZMQ_RCVMORE, &more, &more_size);
+		int elemSize = atoi(elemSizes.c_str());
+
+		socket.recv(&reply, more);
+		socket.getsockopt(ZMQ_RCVMORE, &more, &more_size);
+		char *data = static_cast<char *>(reply.data());
+		LOG("===SECOND MESSAGE RECEIVED: %d", reply.size());
+
+		cv::Mat rgb(row, col, type, data);
+
+		cv::Mat cp = rgb.clone();
+		dataToSendToServer.push(cp);
+
+		/*
+		 LOG("===SECOND MESSAGE RECEIVED: %d FILENAME=%s", reply.size(),
+		 fileName.c_str());
+
+		 char numstr[65]; // enough to hold all numbers up to 64-bits
+		 sprintf(numstr, "%d", count);
+		 std::string loc = "/sdcard/image";
+		 std::string ext = ".jpg";
+		 std::string fileName = loc + numstr + ext;
+
+		 std::vector<uchar> buf;
+		 std::vector<int> params;
+		 params.push_back(cv::IMWRITE_JPEG_QUALITY);
+		 params.push_back(30);
+
+		 cv::imencode(ext, cp, buf, params);
+		 //cv::imwrite(fileName.c_str(), rgb );
+		 count = count + 1;
+		 */
+	}
+
+	/*
+	 msgpack::unpacked msg;
+	 msgpack::unpack(&msg, sbuf.data(), sbuf.size());
+
+	 msgpack::object obj = msg.get();
+	 */
+
+}
+
+static zmq::socket_t * s_client_socket(zmq::context_t & context,
+		const char *urlPath, const char *authToken) {
+
+	LOG("Connecting to hello world server...urlPath=%s..........authToken=%s",
+				urlPath, authToken);
+
+	LOG("-1A");
+	zmq::socket_t *socketExternal = new zmq::socket_t(context, ZMQ_DEALER);
+	LOG("-1B");
+	std::string auth(authToken);
+	int linger = 0;
+
+	socketExternal->setsockopt(ZMQ_LINGER, &linger, sizeof(linger));
+	LOG("-1C");
+	socketExternal->setsockopt(ZMQ_IDENTITY, auth.c_str(),(long) auth.length());
+	LOG("-1D");
+	socketExternal->connect(urlPath);
+	LOG("-1E");
+	return socketExternal;
+}
+
+void sendData(const char *urlPath, const char *authToken) {
 
 	LOG("-------------ZEROMQ THREAD STARTED");
 
-	zmq::context_t context(1);
-	zmq::socket_t socket(context, ZMQ_REQ);
+	zmq::context_t contextExternal(1);
+	zmq::socket_t * socketExternal = s_client_socket(contextExternal, urlPath,
+			authToken);
 
-	LOG("Connecting to hello world server...");
-	socket.connect("tcp://www.whatamidoing.info:12345");
 	std::string start = "CONNECT";
 	zmq::message_t request(start.size());
-
+	LOG("-1F");
 	memcpy((void *) request.data(), start.c_str(), start.size());
-	LOG("Sending Hello ");
-	socket.send(request);
+	socketExternal->send(request);
+	LOG("-1G");
+	std::string expResponse = "NOT_ALIVE";
+	int retries_left = REQUEST_RETRIES;
+	bool connected = false;
+	LOG("-1H");
+	while (!connected) {
+		zmq::pollitem_t externalPollItem[] = { { socketExternal, 0, ZMQ_POLLIN,0 } };
+		//  Get the reply.
+		zmq::message_t reply;
+		LOG("WAITING FOR CONNECTIONG REPLY");
+		zmq::poll(&externalPollItem[0], 1, REQUEST_TIMEOUT * 1000);
+		LOG("-1I");
+		if (externalPollItem[0].revents & ZMQ_POLLIN) {
+			LOG("-1J");
+			socketExternal->recv(&reply);
+			LOG("-1K");
+			std::string res((const char *) reply.data());
+			expResponse = res;
+			LOG("RECEIVED RESPONSE: %s", res.c_str());
 
-	//  Get the reply.
-	zmq::message_t reply;
-	socket.recv(&reply);
-	std::string expResponse = "ALIVE";
+		} else if (--retries_left == 0) {
 
-	bool send = true;
-	if (expResponse.compare((const char *) reply.data())) {
+			break;
+		} else {
+			LOG("TIME OUT -- TRYING AGAIN");
+			socketExternal = s_client_socket(contextExternal, urlPath,
+					authToken);
+		}
+
+	}
+
+	int count = 0;
+	zmq::context_t contextInternal(1);
+	zmq::socket_t socketInternal(contextInternal, ZMQ_PULL);
+	if (expResponse.compare("ALIVE")) {
 		connectedZmq();
+		socketInternal.connect("tcp://127.0.0.1:5555");
+		LOG("WAITING TO RECEIVE MAT");
+		send = true;
 	} else {
+		LOG("unable to connect");
 		unableToConnectZmq();
 		send = false;
 	}
-	LOG("Received World %s", reply.data());
 
 	base64::encoder E;
+	bool retry = false;
 	while (send) {
 		try {
 
-			cv::Mat data;
-			cv::Mat in;
-			if (dataToSend.pop(in)) {
-				data = in.clone();
+			int64_t more = 0;
+			size_t more_size = sizeof(more);
 
-				int cols = data.cols;
-				int rows = data.rows;
-				int elemSize = (int) data.elemSize();
-				int type = data.type();
-				const size_t data_size = data.total() * data.elemSize();
-				char d[data_size];
-				memcpy(d, data.ptr(), data_size);
-				const size_t n_data_size = data_size * 2
-						+ (data.elemSize()) * 3;
-				char *out = (char *) malloc(n_data_size);
-				E.encode(d, data_size, out);
+			zmq::message_t reply;
+			socketInternal.recv(&reply);
+			LOG("----------------------------------------------------------------------");
 
-				//memcpy (d, data.ptr(), data_size);
+			std::string cols(static_cast<char*>(reply.data()), reply.size());
+			socketInternal.getsockopt(ZMQ_RCVMORE, &more, &more_size);
+			int col = atoi(cols.c_str());
 
-				//LOG("Connecting to hello world server...");
-				//socket.connect ("tcp://localhost:5555");
-				//zmq::message_t request (6);
-				//	memcpy ((void *) request.data (), d, imageSize);
-				//	LOG("Sending Hello ");
-				//	socket.send (request);
+			socketInternal.recv(&reply);
+			std::string rows(static_cast<char*>(reply.data()), reply.size());
+			socketInternal.getsockopt(ZMQ_RCVMORE, &more, &more_size);
+			int row = atoi(rows.c_str());
 
-				//  Get the reply.
-				//zmq::message_t reply;
-				//socket.recv (&reply);
-				//LOG("Received World");
+			socketInternal.recv(&reply);
+			std::string types(static_cast<char*>(reply.data()), reply.size());
+			socketInternal.getsockopt(ZMQ_RCVMORE, &more, &more_size);
+			int type = atoi(types.c_str());
 
+			socketInternal.recv(&reply);
+			std::string elemSizes(static_cast<char*>(reply.data()),
+					reply.size());
+			socketInternal.getsockopt(ZMQ_RCVMORE, &more, &more_size);
+			int elemSize = atoi(elemSizes.c_str());
+
+			socketInternal.recv(&reply);
+			std::string stepSize(static_cast<char*>(reply.data()),
+					reply.size());
+			socketInternal.getsockopt(ZMQ_RCVMORE, &more, &more_size);
+			int step = atoi(stepSize.c_str());
+
+			socketInternal.recv(&reply, more);
+			socketInternal.getsockopt(ZMQ_RCVMORE, &more, &more_size);
+			char *data = static_cast<char *>(reply.data());
+			int dataSize = reply.size();
+			LOG("===SECOND MESSAGE RECEIVED: %d", reply.size());
+
+			size_t data_size = col * row * elemSize;
+			LOG("RECIEVED: COLS=%d, ROW=%d, TYPE=%d, ELEM_SIZE=%d IMAGE_STEP=%d",
+					col, row, type, elemSize, step);
+			LOG("--pro-2");
+
+			char colsBuf[65];
+			int len = sprintf(colsBuf, "%d", col);
+			zmq::message_t messCols(len);
+			memcpy((void *) messCols.data(), colsBuf, len);
+			LOG("--pro-2.1");
+			socketExternal->send(messCols, ZMQ_SNDMORE);
+
+			LOG("--pro-3");
+			char rowBuf[65];
+			len = sprintf(rowBuf, "%d", row);
+			zmq::message_t messRows(len);
+			memcpy((void *) messRows.data(), rowBuf, len);
+			socketExternal->send(messRows, ZMQ_SNDMORE);
+
+			LOG("--pro-4");
+			char typeBuf[65];
+			len = sprintf(typeBuf, "%d", type);
+			zmq::message_t messType(len);
+			memcpy((void *) messType.data(), typeBuf, len);
+			socketExternal->send(messType, ZMQ_SNDMORE);
+
+			LOG("--pro-5");
+			char elemBuf[65];
+			len = sprintf(elemBuf, "%d", elemSize);
+			zmq::message_t messSize(len);
+			memcpy((void *) messSize.data(), elemBuf, len);
+			socketExternal->send(messSize, ZMQ_SNDMORE);
+
+			LOG("--pro-6");
+			char stepBuf[65];
+			len = sprintf(stepBuf, "%d", step);
+			zmq::message_t messStep(len);
+			memcpy((void *) messStep.data(), stepBuf, len);
+			socketExternal->send(messStep, ZMQ_SNDMORE);
+
+			LOG("--pro-7");
+
+			/*
+			 char *out;
+			 int size = E.encode(data,data_size,out);
+			 */
+			socketExternal->send(data, data_size);
+
+			zmq::pollitem_t externalPollItem[] = { { socketExternal, 0,
+					ZMQ_POLLIN, 0 } };
+
+			//  Get the reply.
+			zmq::message_t response;
+			LOG("WAITING FOR CONNECTIONG REPLY");
+			zmq::poll(&externalPollItem[0], 1, REQUEST_TIMEOUT * 1000);
+
+			if (externalPollItem[0].revents & ZMQ_POLLIN) {
+				socketExternal->recv(&response);
+				std::string res((const char *) response.data());
+				LOG("RECEIVED RESPONSE: %s", res.c_str());
+
+			} else {
+				LOG("connection dropped");
+				zmqConnectionDropped();
+				break;
 			}
 
+			/* -- PACK -- */
+			/*
+			 char *buf = NULL;
+			 msgpack_sbuffer sbuf;
+			 msgpack_sbuffer_init(&sbuf);
+			 msgpack_packer pck;
+			 msgpack_packer_init(&pck, &sbuf, msgpack_sbuffer_write);
+			 msgpack_pack_raw(&pck, data_size);
+			 msgpack_pack_raw_body(&pck, in.ptr(), data_size);
+			 socket.send(sbuf.data, sbuf.size, 0);
+			 LOG("SENT MESSAGE: DATA_SIZE=%d, BUF_SIZE=%d",data_size,sbuf.size);
+			 msgpack_sbuffer_destroy(&sbuf);
+			 */
+
+			//E.encode(d, data_size, out);
+			//memcpy (d, data.ptr(), data_size);
+			//LOG("Connecting to hello world server...");
+			//socket.connect ("tcp://localhost:5555");
+			//zmq::message_t request (6);
+			//	memcpy ((void *) request.data (), d, imageSize);
+			//	LOG("Sending Hello ");
+			//	socket.send (request);
+			//  Get the reply.
+			//zmq::message_t reply;
+			//socket.recv (&reply);
+			//LOG("Received World");
 		} catch (boost::thread_interrupted const&) {
+			LOG(
+					"========================= THREAD INTERRUPTED ======================");
 			send = false;
 		}
 	}
 
-	LOG("------------ SENDER STOPPED-----------------");
+	contextExternal.close();
+	contextInternal.close();
+	LOG(
+			"=================== SENDER THREAD STOPPED  ============================");
+
+}
+
+JNIEXPORT void JNICALL Java_com_watamidoing_nativecamera_Native_stopZeromq(
+		JNIEnv *env, jclass clz) {
+	LOG("---- SHOULD HAVE INTERUPTED THREAD");
+	send = false;
 
 }
 
 JNIEXPORT void JNICALL Java_com_watamidoing_nativecamera_Native_startZeromq(
-		JNIEnv *, jobject) {
-	boost::thread sendDataThread(sendData);
+		JNIEnv *env, jclass clz, jstring path, jstring token) {
+
+	const char *urlPath = env->GetStringUTFChars(path, 0);
+	const char *authToken = env->GetStringUTFChars(token, 0);
+
+	boost::thread sendDataThread(sendData, urlPath, authToken);
 	tgroup.add_thread(&sendDataThread);
+	//boost::thread receiveDataThread(zeroMQDataReceiver);
+	//tgroup.add_thread(&receiveDataThread);
+	//env->ReleaseStringUTFChars(path, urlPath);
+	//env->ReleaseStringUTFChars(token, authToken);
 	LOG("------- ZEROMQ THREAD CALLED TO START");
 
 }
@@ -847,74 +1135,6 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
 	LOG("JNIOnLoad");
 
 	return JNI_VERSION_1_6; /* the required JNI version */
-}
-
-
-JNIEXPORT void JNICALL Java_com_watamidoing_nativecamera_Native_surfaceChanged(
-		JNIEnv*, jobject, jint width, jint height, jint orien) {
-	LOG("Surface Changed");
-	glViewport(0, 0, width, height);
-	if (orien == 1) {
-		screenWidth = width;
-		screenHeight = height;
-		orientation = 1;
-	} else {
-		screenWidth = height;
-		screenHeight = width;
-		orientation = 2;
-	}
-
-	LOG("screenWidth = %d", screenWidth);
-	LOG("screenHeight = %d", screenHeight);
-	glEnable(GL_TEXTURE_2D);
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glEnable(GL_CULL_FACE);
-	glClearDepthf(1.0f);
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_ALWAYS);
-}
-
-JNIEXPORT void JNICALL Java_com_watamidoing_nativecamera_Native_releaseCamera(
-		JNIEnv*, jobject) {
-	LOG("Camera Released");
-	capture.release();
-	//tgroup.interrupt_all();
-}
-
-void frameRetriever() {
-
-	bool readFrame = true;
-	int count = 0;
-	LOG("---------------- STARTING RETREIVING FRAMES---------------------");
-	while (capture.isOpened() && readFrame) {
-		try {
-			fps = capture.get(CV_CAP_PROP_FPS);
-			bool res = capture.read(inframe);
-			fpsMeter.measure();
-			cv::Mat mat;
-			if (!inframe.empty() && (res == true)) {
-				const cv::Mat fr = inframe.clone();
-
-				//char val[20];
-				//sprintf(val,"/sdcard/out%d.png",count);
-
-				//std::string newVal(val);
-				//LOG("FileName:%s",newVal.c_str());
-				//bool res = cv::imwrite(newVal.c_str(), fr);
-				//pthread_mutex_lock(&FGmutex);
-				LOG("PUSHING");
-				sendToDisplayFrame.push(fr);
-				count = count + 1;
-				//pthread_mutex_unlock(&FGmutex);
-
-			}
-
-		} catch (boost::thread_interrupted const&) {
-			readFrame = false;
-		}
-	}
-	//dataToSend.
-	LOG("Camera Closed");
 }
 
 }

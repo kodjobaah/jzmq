@@ -28,6 +28,7 @@ public class CameraRenderer implements Renderer{
 	private int imageHeight;
 	private NativeCommunicator nativeCommunicator;
 	private CameraPreviewerData cameraPreviewData;
+	private boolean videoStart;
 	public CameraRenderer(WhatAmIdoing whatAmIdoing, Size size,int rotation,int cameraId) {
 		super();
 		context=  whatAmIdoing;
@@ -54,6 +55,9 @@ public class CameraRenderer implements Renderer{
 	public void onSurfaceChanged(GL10 arg0, int width, int height) {
 		Native.surfaceChangedNative(width, height);
 	
+		if (videoStart) {
+			context.startCamera();
+		}
 	}
 
 	public void setOrientation(int rotation, int cameraId, int imageWidth, int imageHeight) {
@@ -99,8 +103,12 @@ public class CameraRenderer implements Renderer{
 	public void opencvOpen(NativeCommunicator nativeCommunicator) {
 		this.nativeCommunicator = nativeCommunicator;
 		Native.loadlibs();
-		Native.storeMessenger(nativeCommunicator);
+	//	Native.storeMessenger(nativeCommunicator);
 		opencvOpen();
+	}
+
+	public void setVideoStart(boolean videoStart) {
+		this.videoStart = videoStart;
 	}
 
 

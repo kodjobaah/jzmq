@@ -17,7 +17,8 @@ public class Native {
 	public static native void renderBackground(boolean transmitFrame);
 	public static native void surfaceChanged(int width, int height, int orientation);
 	public static native void storeMessenger(NativeCallback messenger);
-	public static native void startZeromq();
+	public static native void startZeromq(String path, String token);
+	public static native void stopZeromq();
 	public static native void init(int width, int height);
 	public static native void draw();
 	public static native void surfaceInit();

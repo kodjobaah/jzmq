@@ -33,4 +33,6 @@ public interface ZeroMQController extends Serializable {
 
 	public void zeroMQServiceDestroyed(boolean serviceDestroyed);
 
+	public void zeroMQServiceStarted(boolean serviceStarted);
+
 }

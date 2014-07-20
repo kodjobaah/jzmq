@@ -22,9 +22,11 @@ LOCAL_MODULE    := NativeCamera
 LOCAL_SRC_FILES := src/CameraRenderer.cpp \
                    src/FpsMeter.cpp \
                    src/cdecode.c \
-                   src/cencode.c 
+                   src/cencode.c \
+                   src/global.cpp \
+                   src/msgpacktest.cpp
 
-LOCAL_STATIC_LIBRARIES := boost_system boost_thread libzmq 
+LOCAL_STATIC_LIBRARIES := boost_system boost_thread libzmq msgpack 
 LOCAL_C_INCLUDES       += $(LOCAL_PATH)/include \
 						  ../zeromq/include \
 						  C:/Users/whatamidoing/android-ndk-r9b/sources/boost/include/boost-1_55

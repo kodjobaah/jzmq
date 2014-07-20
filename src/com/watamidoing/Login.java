@@ -68,9 +68,9 @@ public class Login extends Activity {
 		
 		super.onResume();
 		Authentication auth =  DatabaseHandler.getInstance(activity).getDefaultAuthentication();
-		//if (auth != null) {
+		if (auth != null) {
 			startCamera();
-		//}
+		}
 	}
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
