@@ -24,6 +24,12 @@
 #include <b64/encode.hpp>
 #include <msgpack.h>
 
+
+#include <android/native_activity.h>
+#include <turbojpeg.h>
+
+#include <android/bitmap.h>
+
 #include "FpsMeter.h"
 #include "global.h"
 
@@ -531,7 +537,9 @@ Java_com_watamidoing_nativecamera_Native_draw(JNIEnv* env, jobject obj) {
 		glDisableVertexAttribArray(userData.positionLoc);
 		glDisableVertexAttribArray(userData.texCoordLoc);
 
-		dataToSend.push(rgbFrame);
+		cv::Mat frameToSend;
+		rgbFrame.copyTo(frameToSend);
+		dataToSend.push(frameToSend);
 	} else {
 		//	LOG("UNABLE TO READ FRAME");
 	}
@@ -700,7 +708,7 @@ void updateMessageSent(long messageSent) {
 		/* Find the callBack method ID */
 		jclass interfaceClass = env->GetObjectClass(obj);
 		jmethodID method = env->GetMethodID(interfaceClass, "updateMessagesSent",
-				"(I)V");
+				"(J)V");
 		if (!method) {
 			LOG("callback_handler: failed to get method ID (updateMessagesSent)");
 			gJavaVM->DetachCurrentThread();
@@ -728,12 +736,90 @@ void sendCVMat(void) {
 	LOG("-3");
 	socket.bind("tcp://127.0.0.1:5555");
 	LOG("=== WAITING FOR MAT=====");
+	JNIEnv *env = getJniEnv();
+	jclass bitmapConfig = env->FindClass("android/graphics/Bitmap$Config");
+	jfieldID rgb8888FieldID = env->GetStaticFieldID(bitmapConfig, "ARGB_8888","Landroid/graphics/Bitmap$Config;");
+	jobject rgb8888Obj = env->GetStaticObjectField(bitmapConfig, rgb8888FieldID);
+	jclass bitmapClass = env->FindClass("android/graphics/Bitmap");
+	jmethodID createBitmapMethodID = env->GetStaticMethodID(bitmapClass,"createBitmap",
+				    "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;");
+
+
+
+	int fileCount = 0;
+	tjhandle _jpegCompressor = tjInitCompress();
 	while (!done) {
 
 		cv::Mat in;
 		CvMat *out;
 		cv::Mat cl;
 		if (dataToSend.pop(in)) {
+
+
+		    AndroidBitmapInfo  info;
+		    void*              buffer = 0;
+
+			cv::Mat newSize;
+			int _width = 352;
+			int _height = 288;
+
+			cv::Size dsize(_width,_height);
+			cv::resize(in,newSize,dsize,0,0,cv::INTER_AREA);
+
+			jobject bitmapObj = env->CallStaticObjectMethod(bitmapClass, createBitmapMethodID,
+			    _width, _height, rgb8888Obj);
+
+
+			CV_Assert( AndroidBitmap_getInfo(env, bitmapObj, &info) >= 0 );
+			CV_Assert( AndroidBitmap_lockPixels(env, bitmapObj, &buffer) >= 0 );
+			CV_Assert( buffer);
+			cv::Mat tmp(info.height, info.width, newSize.type(), buffer);
+			if(newSize.type() == CV_8UC1){
+			   LOG("nMatToBitmap: CV_8UC1 -> RGBA_8888");
+			   cv::cvtColor(newSize, tmp, CV_GRAY2RGBA);
+			} else if(newSize.type() == CV_8UC3){
+			    LOG("nMatToBitmap: CV_8UC3 -> RGBA_8888");
+			    cvtColor(newSize, tmp, CV_RGB2RGBA);
+			} else if(newSize.type() == CV_8UC4){
+			   LOG("nMatToBitmap: CV_8UC4 -> RGBA_8888");
+			   newSize.copyTo(tmp);
+			}
+
+
+			//
+
+			AndroidBitmap_unlockPixels(env, bitmapObj);
+
+			unsigned char *outdata = (uchar *) newSize.datastart;
+			int flags  = TJFLAG_BOTTOMUP;
+			const int JPEG_QUALITY = 75;
+			long unsigned int _jpegSize = 0;
+			unsigned char* _compressedImage = NULL; //!< Memory is allocated by tjCompress2 if _jpegSize == 0
+
+
+			int compResults = tjCompress2(_jpegCompressor,outdata, _width, 0, _height, TJPF_RGB,
+			          &_compressedImage, &_jpegSize, TJSAMP_440, JPEG_QUALITY,
+			          flags);
+
+			LOG("RESULTS FROM COMPRESSION: %i",compResults);
+
+			 char numstr[65]; // enough to hold all numbers up to 64-bits
+			 sprintf(numstr, "%d", fileCount);
+			 std::string loc = "/sdcard/image";
+			 std::string ext = ".jpg";
+			 std::string configFile = loc + numstr + ext;
+			 FILE* appConfigFile = fopen(configFile.c_str(), "w+");
+			 int res =  0;
+			 LOG("App config file created successfully. Writing config data ...%s...image size=%i\n",configFile.c_str(),_jpegSize);
+			 res = fwrite(_compressedImage, sizeof(char), _jpegSize, appConfigFile);
+			 fclose(appConfigFile);
+			 			//to free the memory allocated by TurboJPEG (either by tjAlloc(),
+			//or by the Compress/Decompress) after you are done working on it:
+			tjFree(_compressedImage);
+
+
+			fileCount = fileCount + 1;
+			/*
 			int cols = in.cols;
 			int rows = in.rows;
 			int type = in.type();
@@ -784,11 +870,14 @@ void sendCVMat(void) {
 			 LOG("SENT MESSAGE: DATA_SIZE=%d, BUF_SIZE=%d",data_size,sbuf.size);
 			 msgpack_sbuffer_destroy(&sbuf);
 			 */
-			socket.send(in.ptr(), data_size);
-			LOG("SENT MESSAGE: DATA_SIZE=%d ", data_size);
+			//socket.send(in.ptr(), data_size);
+
+			//LOG("SENT MESSAGE: DATA_SIZE=%d ", data_size);
 
 		}
 	}
+	tjDestroy(_jpegCompressor);
+
 }
 void zeroMQDataReceiver() {
 
@@ -903,31 +992,14 @@ void sendData(const char *urlPath, const char *authToken) {
 	int retries_left = REQUEST_RETRIES;
 	bool connected = false;
 	LOG("-1H");
-	while (!connected) {
-		zmq::pollitem_t externalPollItem[] = { { socketExternal, 0, ZMQ_POLLIN,0 } };
-		//  Get the reply.
-		zmq::message_t reply;
-		LOG("WAITING FOR CONNECTIONG REPLY");
-		zmq::poll(&externalPollItem[0], 1, REQUEST_TIMEOUT * 1000);
-		LOG("-1I");
-		if (externalPollItem[0].revents & ZMQ_POLLIN) {
-			LOG("-1J");
-			socketExternal->recv(&reply);
-			LOG("-1K");
-			std::string res((const char *) reply.data());
-			expResponse = res;
-			LOG("RECEIVED RESPONSE: %s", res.c_str());
+	zmq::message_t reply;
+	LOG("WAITING FOR CONNECTIONG REPLY");
+	socketExternal->recv(&reply);
+	LOG("-1K");
+	std::string res((const char *) reply.data());
+	expResponse = res;
+	LOG("RECEIVED RESPONSE: %s", res.c_str());
 
-		} else if (--retries_left == 0) {
-
-			break;
-		} else {
-			LOG("TIME OUT -- TRYING AGAIN");
-			socketExternal = s_client_socket(contextExternal, urlPath,
-					authToken);
-		}
-
-	}
 
 	int count = 0;
 	zmq::context_t contextInternal(1);
@@ -1034,25 +1106,13 @@ void sendData(const char *urlPath, const char *authToken) {
 			 int size = E.encode(data,data_size,out);
 			 */
 			socketExternal->send(data, data_size);
-
-			zmq::pollitem_t externalPollItem[] = { { socketExternal, 0,
-					ZMQ_POLLIN, 0 } };
-
-			//  Get the reply.
+			count = count + 1;
 			zmq::message_t response;
 			LOG("WAITING FOR CONNECTIONG REPLY");
-			zmq::poll(&externalPollItem[0], 1, REQUEST_TIMEOUT * 1000);
-
-			if (externalPollItem[0].revents & ZMQ_POLLIN) {
-				socketExternal->recv(&response);
-				std::string res((const char *) response.data());
-				LOG("RECEIVED RESPONSE: %s", res.c_str());
-
-			} else {
-				LOG("connection dropped");
-				zmqConnectionDropped();
-				break;
-			}
+			socketExternal->recv(&response);
+			std::string res((const char *) response.data());
+			LOG("RECEIVED RESPONSE: %s", res.c_str());
+			updateMessageSent(count);
 
 			/* -- PACK -- */
 			/*

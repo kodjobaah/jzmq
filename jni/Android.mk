@@ -24,5 +24,8 @@ include  C:/Users/whatamidoing/hey/whatamidoingffmpeg/jni/jzmq/Android.mk
 include $(CLEAR_VARS)
 include  C:/Users/whatamidoing/hey/whatamidoingffmpeg/jni/msgpack-c/Android.mk
 
+include $(CLEAR_VARS)
+include  C:/Users/whatamidoing/hey/whatamidoingffmpeg/jni/libjpeg-turbo/Android.mk
+
 #include $(CLEAR_VARS)
 #include  C:/Users/whatamidoing/hey/whatamidoingffmpeg/jni/czmq/Android.mk

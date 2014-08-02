@@ -30,7 +30,7 @@ public class NativeCommunicator implements NativeCallback {
 
 	@Override
 	public void unableToConnect() {
-		                                                                                                                Log.d(TAG,"---- UN - ABLE TO CONNECT");
+		Log.d(TAG,"---- UN - ABLE TO CONNECT");
 		zeroMQServiceNative.sendServiceStopNotification();
 	}
 
@@ -39,6 +39,12 @@ public class NativeCommunicator implements NativeCallback {
 		Log.d(TAG,"---- CONNECTION DROPPED");
 		zeroMQServiceNative.sendServiceStopNotification();
 		
+	}
+
+	@Override
+	public void updateMessagesSent(long messageCount) {
+		Log.d(TAG,"---- MESSAGE COUNT");
+		zeroMQServiceNative.updateMessagesSent(messageCount);
 	}
 
 }

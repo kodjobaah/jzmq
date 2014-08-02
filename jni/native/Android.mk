@@ -26,13 +26,15 @@ LOCAL_SRC_FILES := src/CameraRenderer.cpp \
                    src/global.cpp \
                    src/msgpacktest.cpp
 
-LOCAL_STATIC_LIBRARIES := boost_system boost_thread libzmq msgpack 
+LOCAL_STATIC_LIBRARIES := boost_system boost_thread libzmq msgpack libjpeg2
 LOCAL_C_INCLUDES       += $(LOCAL_PATH)/include \
+ 						   $(call include-path-for, corecg graphics) \
 						  ../zeromq/include \
+						  ../libjpeg-turbo \
 						  C:/Users/whatamidoing/android-ndk-r9b/sources/boost/include/boost-1_55
 
 
-LOCAL_LDLIBS +=  $(OPENGLES_LIB) -llog -ldl -lEGL  -lGLESv2 \
+LOCAL_LDLIBS +=  $(OPENGLES_LIB) -llog -ldl -lEGL  -lGLESv2 -ljnigraphics \
 			$(CPP_STATIC)
 include $(BUILD_SHARED_LIBRARY)
  $(call import-module,boost) 
