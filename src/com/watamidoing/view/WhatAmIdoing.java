@@ -689,7 +689,7 @@ public class WhatAmIdoing extends FragmentActivity implements ZeroMQController,
 
 					if (videoStart) {
 						cameraHasBeenStarted = true;
-						stopVideo(false);
+						//stopVideo(false);
 					} else {
 						cameraHasBeenStarted = false;
 					}

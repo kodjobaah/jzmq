@@ -32,6 +32,8 @@
 
 #include "FpsMeter.h"
 #include "global.h"
+#include "SharedData.h"
+
 
 //#include <time.h>
 
@@ -72,6 +74,12 @@ int screenHeight;
 int orientation;
 int cameraId;
 double fps;
+
+boost::mutex muxSendData;
+waid::SharedData sharedData;
+bool waid::SharedData::sendMatData = false;
+
+
 pthread_mutex_t FGmutex;
 pthread_t frameGrabber;
 pthread_attr_t attr;
@@ -149,7 +157,7 @@ extern "C" {
 void drawBackground(bool sendData);
 void destroyTexture();
 void frameRetriever();
-void sendData(const char *urlPath, const char *authToken);
+void sendData(const char *urlPath, const char *authToken, waid::SharedData *sharedData);
 JNIEnv *getJniEnv();
 jobject getCallbackInterface(JNIEnv *env);
 void ableToConnectZmq();
@@ -162,7 +170,7 @@ void drawImage(cv::Mat data);
 void translateM(float m[], int mOffset, float x, float y, float z);
 void printMatrix(float m[]);
 void checkBufferStatus();
-void sendCVMat(void);
+void sendCVMat(waid::SharedData *sharedData);
 /*******************************EXAMPLES BEGIN ****************************/
 bool checkGlError(const char* funcName) {
 	GLint err = glGetError();
@@ -437,7 +445,7 @@ Java_com_watamidoing_nativecamera_Native_init(JNIEnv* env, jobject obj,
 	//userData.textureId = createTexture();
 	createRenderBuffer();
 
-	boost::thread sendCVMatThread(sendCVMat);
+	boost::thread sendCVMatThread(sendCVMat,&sharedData);
 	tgroup.add_thread(&sendCVMatThread);
 }
 
@@ -725,7 +733,7 @@ void updateMessageSent(long messageSent) {
 	LOG("------------ Messages Sent----------------");
 }
 
-void sendCVMat(void) {
+void sendCVMat(waid::SharedData *sharedData) {
 	LOG(
 			"---------------------------------------------- SEND CVMAT -----------------------");
 	bool done = false;
@@ -735,19 +743,12 @@ void sendCVMat(void) {
 	zmq::socket_t socket(context, ZMQ_PUSH);
 	LOG("-3");
 	socket.bind("tcp://127.0.0.1:5555");
+	int linger = 0;
+	socket.setsockopt(ZMQ_LINGER, &linger, sizeof(linger));
 	LOG("=== WAITING FOR MAT=====");
-	JNIEnv *env = getJniEnv();
-	jclass bitmapConfig = env->FindClass("android/graphics/Bitmap$Config");
-	jfieldID rgb8888FieldID = env->GetStaticFieldID(bitmapConfig, "ARGB_8888","Landroid/graphics/Bitmap$Config;");
-	jobject rgb8888Obj = env->GetStaticObjectField(bitmapConfig, rgb8888FieldID);
-	jclass bitmapClass = env->FindClass("android/graphics/Bitmap");
-	jmethodID createBitmapMethodID = env->GetStaticMethodID(bitmapClass,"createBitmap",
-				    "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;");
-
-
-
 	int fileCount = 0;
 	tjhandle _jpegCompressor = tjInitCompress();
+
 	while (!done) {
 
 		cv::Mat in;
@@ -756,106 +757,42 @@ void sendCVMat(void) {
 		if (dataToSend.pop(in)) {
 
 
-		    AndroidBitmapInfo  info;
-		    void*              buffer = 0;
+			muxSendData.lock();
+			LOG("send data %i",unsigned(sharedData->sendMatData));
+			if (sharedData->sendMatData) {
+				muxSendData.unlock();
+				cv::Mat newSize;
+				int _width = 352;
+				int _height = 288;
 
-			cv::Mat newSize;
-			int _width = 352;
-			int _height = 288;
+				cv::Size dsize(_width,_height);
+				cv::resize(in,newSize,dsize,0,0,cv::INTER_AREA);
 
-			cv::Size dsize(_width,_height);
-			cv::resize(in,newSize,dsize,0,0,cv::INTER_AREA);
-
-			jobject bitmapObj = env->CallStaticObjectMethod(bitmapClass, createBitmapMethodID,
-			    _width, _height, rgb8888Obj);
-
-
-			CV_Assert( AndroidBitmap_getInfo(env, bitmapObj, &info) >= 0 );
-			CV_Assert( AndroidBitmap_lockPixels(env, bitmapObj, &buffer) >= 0 );
-			CV_Assert( buffer);
-			cv::Mat tmp(info.height, info.width, newSize.type(), buffer);
-			if(newSize.type() == CV_8UC1){
-			   LOG("nMatToBitmap: CV_8UC1 -> RGBA_8888");
-			   cv::cvtColor(newSize, tmp, CV_GRAY2RGBA);
-			} else if(newSize.type() == CV_8UC3){
-			    LOG("nMatToBitmap: CV_8UC3 -> RGBA_8888");
-			    cvtColor(newSize, tmp, CV_RGB2RGBA);
-			} else if(newSize.type() == CV_8UC4){
-			   LOG("nMatToBitmap: CV_8UC4 -> RGBA_8888");
-			   newSize.copyTo(tmp);
-			}
+				unsigned char *outdata = (uchar *) newSize.datastart;
+				int flags  = TJFLAG_BOTTOMUP;
+				const int JPEG_QUALITY = 75;
+				long unsigned int _jpegSize = 0;
+				unsigned char* _compressedImage = NULL; //!< Memory is allocated by tjCompress2 if _jpegSize == 0
 
 
-			//
-
-			AndroidBitmap_unlockPixels(env, bitmapObj);
-
-			unsigned char *outdata = (uchar *) newSize.datastart;
-			int flags  = TJFLAG_BOTTOMUP;
-			const int JPEG_QUALITY = 75;
-			long unsigned int _jpegSize = 0;
-			unsigned char* _compressedImage = NULL; //!< Memory is allocated by tjCompress2 if _jpegSize == 0
-
-
-			int compResults = tjCompress2(_jpegCompressor,outdata, _width, 0, _height, TJPF_RGB,
+				int compResults = tjCompress2(_jpegCompressor,outdata, _width, 0, _height, TJPF_RGB,
 			          &_compressedImage, &_jpegSize, TJSAMP_440, JPEG_QUALITY,
 			          flags);
 
-			LOG("RESULTS FROM COMPRESSION: %i",compResults);
+				LOG("RESULTS FROM COMPRESSION: %i",compResults);
+				zmq::message_t messData(_jpegSize);
+				memcpy((void *) messData.data(), _compressedImage, _jpegSize);
+				LOG("JUST BEFORE SENDING");
+				socket.send(messData,0);
+				LOG("--sent");
 
-			 char numstr[65]; // enough to hold all numbers up to 64-bits
-			 sprintf(numstr, "%d", fileCount);
-			 std::string loc = "/sdcard/image";
-			 std::string ext = ".jpg";
-			 std::string configFile = loc + numstr + ext;
-			 FILE* appConfigFile = fopen(configFile.c_str(), "w+");
-			 int res =  0;
-			 LOG("App config file created successfully. Writing config data ...%s...image size=%i\n",configFile.c_str(),_jpegSize);
-			 res = fwrite(_compressedImage, sizeof(char), _jpegSize, appConfigFile);
-			 fclose(appConfigFile);
 			 			//to free the memory allocated by TurboJPEG (either by tjAlloc(),
 			//or by the Compress/Decompress) after you are done working on it:
-			tjFree(_compressedImage);
-
-
-			fileCount = fileCount + 1;
-			/*
-			int cols = in.cols;
-			int rows = in.rows;
-			int type = in.type();
-			int elem_size = in.elemSize();
-			int step = in.step;
-			const size_t data_size = cols * rows * elem_size;
-
-			char colsBuf[65];
-			int len = sprintf(colsBuf, "%d", cols);
-			zmq::message_t messCols(len);
-			memcpy((void *) messCols.data(), colsBuf, len);
-			socket.send(messCols, ZMQ_SNDMORE);
-
-			char rowBuf[65];
-			len = sprintf(rowBuf, "%d", rows);
-			zmq::message_t messRows(len);
-			memcpy((void *) messRows.data(), rowBuf, len);
-			socket.send(messRows, ZMQ_SNDMORE);
-
-			char typeBuf[65];
-			len = sprintf(typeBuf, "%d", type);
-			zmq::message_t messType(len);
-			memcpy((void *) messType.data(), typeBuf, len);
-			socket.send(messType, ZMQ_SNDMORE);
-
-			char elemBuf[65];
-			len = sprintf(elemBuf, "%d", elem_size);
-			zmq::message_t messSize(len);
-			memcpy((void *) messSize.data(), elemBuf, len);
-			socket.send(messSize, ZMQ_SNDMORE);
-
-			char stepBuf[65];
-			len = sprintf(stepBuf, "%d", step);
-			zmq::message_t stepSize(len);
-			memcpy((void *) stepSize.data(), stepBuf, len);
-			socket.send(stepBuf, ZMQ_SNDMORE);
+				tjFree(_compressedImage);
+				fileCount = fileCount + 1;
+			} else {
+				muxSendData.unlock();
+			}
 
 			/* -- PACK -- */
 			/*
@@ -877,79 +814,6 @@ void sendCVMat(void) {
 		}
 	}
 	tjDestroy(_jpegCompressor);
-
-}
-void zeroMQDataReceiver() {
-
-	zmq::context_t context(1);
-	zmq::socket_t socket(context, ZMQ_PULL);
-	socket.connect("tcp://127.0.0.1:5555");
-	bool done = false;
-	LOG("WAITING TO RECEIVE MAT");
-	int count = 0;
-	while (!done) {
-		int64_t more = 0;
-		size_t more_size = sizeof(more);
-
-		zmq::message_t reply;
-		socket.recv(&reply);
-
-		std::string cols(static_cast<char*>(reply.data()), reply.size());
-		socket.getsockopt(ZMQ_RCVMORE, &more, &more_size);
-		int col = atoi(cols.c_str());
-
-		socket.recv(&reply);
-		std::string rows(static_cast<char*>(reply.data()), reply.size());
-		socket.getsockopt(ZMQ_RCVMORE, &more, &more_size);
-		int row = atoi(rows.c_str());
-
-		socket.recv(&reply);
-		std::string types(static_cast<char*>(reply.data()), reply.size());
-		socket.getsockopt(ZMQ_RCVMORE, &more, &more_size);
-		int type = atoi(types.c_str());
-
-		socket.recv(&reply);
-		std::string elemSizes(static_cast<char*>(reply.data()), reply.size());
-		socket.getsockopt(ZMQ_RCVMORE, &more, &more_size);
-		int elemSize = atoi(elemSizes.c_str());
-
-		socket.recv(&reply, more);
-		socket.getsockopt(ZMQ_RCVMORE, &more, &more_size);
-		char *data = static_cast<char *>(reply.data());
-		LOG("===SECOND MESSAGE RECEIVED: %d", reply.size());
-
-		cv::Mat rgb(row, col, type, data);
-
-		cv::Mat cp = rgb.clone();
-		dataToSendToServer.push(cp);
-
-		/*
-		 LOG("===SECOND MESSAGE RECEIVED: %d FILENAME=%s", reply.size(),
-		 fileName.c_str());
-
-		 char numstr[65]; // enough to hold all numbers up to 64-bits
-		 sprintf(numstr, "%d", count);
-		 std::string loc = "/sdcard/image";
-		 std::string ext = ".jpg";
-		 std::string fileName = loc + numstr + ext;
-
-		 std::vector<uchar> buf;
-		 std::vector<int> params;
-		 params.push_back(cv::IMWRITE_JPEG_QUALITY);
-		 params.push_back(30);
-
-		 cv::imencode(ext, cp, buf, params);
-		 //cv::imwrite(fileName.c_str(), rgb );
-		 count = count + 1;
-		 */
-	}
-
-	/*
-	 msgpack::unpacked msg;
-	 msgpack::unpack(&msg, sbuf.data(), sbuf.size());
-
-	 msgpack::object obj = msg.get();
-	 */
 
 }
 
@@ -974,7 +838,7 @@ static zmq::socket_t * s_client_socket(zmq::context_t & context,
 	return socketExternal;
 }
 
-void sendData(const char *urlPath, const char *authToken) {
+void sendData(const char *urlPath, const char *authToken, waid::SharedData *sharedData) {
 
 	LOG("-------------ZEROMQ THREAD STARTED");
 
@@ -1008,16 +872,18 @@ void sendData(const char *urlPath, const char *authToken) {
 		connectedZmq();
 		socketInternal.connect("tcp://127.0.0.1:5555");
 		LOG("WAITING TO RECEIVE MAT");
-		send = true;
+		sharedData->sendMatData = true;
 	} else {
 		LOG("unable to connect");
 		unableToConnectZmq();
-		send = false;
+		sharedData->sendMatData = false;
 	}
 
 	base64::encoder E;
 	bool retry = false;
-	while (send) {
+	muxSendData.lock();
+	while (sharedData->sendMatData) {
+	muxSendData.unlock();
 		try {
 
 			int64_t more = 0;
@@ -1027,92 +893,23 @@ void sendData(const char *urlPath, const char *authToken) {
 			socketInternal.recv(&reply);
 			LOG("----------------------------------------------------------------------");
 
-			std::string cols(static_cast<char*>(reply.data()), reply.size());
-			socketInternal.getsockopt(ZMQ_RCVMORE, &more, &more_size);
-			int col = atoi(cols.c_str());
 
-			socketInternal.recv(&reply);
-			std::string rows(static_cast<char*>(reply.data()), reply.size());
-			socketInternal.getsockopt(ZMQ_RCVMORE, &more, &more_size);
-			int row = atoi(rows.c_str());
+			long unsigned int _jpegSize = reply.size();
 
-			socketInternal.recv(&reply);
-			std::string types(static_cast<char*>(reply.data()), reply.size());
-			socketInternal.getsockopt(ZMQ_RCVMORE, &more, &more_size);
-			int type = atoi(types.c_str());
+			unsigned char *dataReceived = (unsigned char*)reply.data();
+			char numstr[65]; // enough to hold all numbers up to 64-bits
+			sprintf(numstr, "%d", count);
+			std::string loc = "/sdcard/image";
+			 std::string ext = ".jpg";
+			 std::string configFile = loc + numstr + ext;
+			 FILE* appConfigFile = fopen(configFile.c_str(), "w+");
+			 int res =  0;
+			 LOG("App config file created successfully. Writing config data ...%s...image size=%i\n",configFile.c_str(),reply.size());
+			 res = fwrite(dataReceived, sizeof(char),_jpegSize, appConfigFile);
+			 fclose(appConfigFile);
+			 count = count + 1;
 
-			socketInternal.recv(&reply);
-			std::string elemSizes(static_cast<char*>(reply.data()),
-					reply.size());
-			socketInternal.getsockopt(ZMQ_RCVMORE, &more, &more_size);
-			int elemSize = atoi(elemSizes.c_str());
-
-			socketInternal.recv(&reply);
-			std::string stepSize(static_cast<char*>(reply.data()),
-					reply.size());
-			socketInternal.getsockopt(ZMQ_RCVMORE, &more, &more_size);
-			int step = atoi(stepSize.c_str());
-
-			socketInternal.recv(&reply, more);
-			socketInternal.getsockopt(ZMQ_RCVMORE, &more, &more_size);
-			char *data = static_cast<char *>(reply.data());
-			int dataSize = reply.size();
-			LOG("===SECOND MESSAGE RECEIVED: %d", reply.size());
-
-			size_t data_size = col * row * elemSize;
-			LOG("RECIEVED: COLS=%d, ROW=%d, TYPE=%d, ELEM_SIZE=%d IMAGE_STEP=%d",
-					col, row, type, elemSize, step);
-			LOG("--pro-2");
-
-			char colsBuf[65];
-			int len = sprintf(colsBuf, "%d", col);
-			zmq::message_t messCols(len);
-			memcpy((void *) messCols.data(), colsBuf, len);
-			LOG("--pro-2.1");
-			socketExternal->send(messCols, ZMQ_SNDMORE);
-
-			LOG("--pro-3");
-			char rowBuf[65];
-			len = sprintf(rowBuf, "%d", row);
-			zmq::message_t messRows(len);
-			memcpy((void *) messRows.data(), rowBuf, len);
-			socketExternal->send(messRows, ZMQ_SNDMORE);
-
-			LOG("--pro-4");
-			char typeBuf[65];
-			len = sprintf(typeBuf, "%d", type);
-			zmq::message_t messType(len);
-			memcpy((void *) messType.data(), typeBuf, len);
-			socketExternal->send(messType, ZMQ_SNDMORE);
-
-			LOG("--pro-5");
-			char elemBuf[65];
-			len = sprintf(elemBuf, "%d", elemSize);
-			zmq::message_t messSize(len);
-			memcpy((void *) messSize.data(), elemBuf, len);
-			socketExternal->send(messSize, ZMQ_SNDMORE);
-
-			LOG("--pro-6");
-			char stepBuf[65];
-			len = sprintf(stepBuf, "%d", step);
-			zmq::message_t messStep(len);
-			memcpy((void *) messStep.data(), stepBuf, len);
-			socketExternal->send(messStep, ZMQ_SNDMORE);
-
-			LOG("--pro-7");
-
-			/*
-			 char *out;
-			 int size = E.encode(data,data_size,out);
-			 */
-			socketExternal->send(data, data_size);
-			count = count + 1;
-			zmq::message_t response;
-			LOG("WAITING FOR CONNECTIONG REPLY");
-			socketExternal->recv(&response);
-			std::string res((const char *) response.data());
-			LOG("RECEIVED RESPONSE: %s", res.c_str());
-			updateMessageSent(count);
+			//updateMessageSent(count);
 
 			/* -- PACK -- */
 			/*
@@ -1141,10 +938,12 @@ void sendData(const char *urlPath, const char *authToken) {
 			//socket.recv (&reply);
 			//LOG("Received World");
 		} catch (boost::thread_interrupted const&) {
-			LOG(
-					"========================= THREAD INTERRUPTED ======================");
-			send = false;
+			LOG("========================= THREAD INTERRUPTED ======================");
+			muxSendData.lock();
+			sharedData->sendMatData = false;
+			muxSendData.unlock();
 		}
+		muxSendData.lock();
 	}
 
 	contextExternal.close();
@@ -1157,7 +956,7 @@ void sendData(const char *urlPath, const char *authToken) {
 JNIEXPORT void JNICALL Java_com_watamidoing_nativecamera_Native_stopZeromq(
 		JNIEnv *env, jclass clz) {
 	LOG("---- SHOULD HAVE INTERUPTED THREAD");
-	send = false;
+	sharedData.sendMatData = false;
 
 }
 
@@ -1167,8 +966,13 @@ JNIEXPORT void JNICALL Java_com_watamidoing_nativecamera_Native_startZeromq(
 	const char *urlPath = env->GetStringUTFChars(path, 0);
 	const char *authToken = env->GetStringUTFChars(token, 0);
 
-	boost::thread sendDataThread(sendData, urlPath, authToken);
+	sharedData.sendMatData = true;
+	boost::thread sendDataThread(sendData, urlPath, authToken, &sharedData);
 	tgroup.add_thread(&sendDataThread);
+	muxSendData.lock();
+
+	LOG("VALUE OF SENDMATADATA %i",sharedData.sendMatData);
+	muxSendData.unlock();
 	//boost::thread receiveDataThread(zeroMQDataReceiver);
 	//tgroup.add_thread(&receiveDataThread);
 	//env->ReleaseStringUTFChars(path, urlPath);
